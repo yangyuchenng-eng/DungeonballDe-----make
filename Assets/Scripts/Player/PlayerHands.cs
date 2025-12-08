@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 // AI-assisted script: structure and some code snippets generated with ChatGPT,
 // then adapted and integrated by the student.
@@ -23,7 +24,7 @@ public class PlayerHands : MonoBehaviour
 
     [Header("Screen Grab Settings")]
     public float maxGrabWorldDistance = 8f;   // 物体离手太远就不抓（世界空间距离）
-    public bool useRectSizeAsRadius = true;   // true: 用 UI 宽度/2 做半径；false: 用下面 override 值
+    public bool useRectSizeAsRadius = true;   // true: 用 UI 宽度/2 做半径；false: 用 override
     public float leftRadiusOverride = 80f;    // 像素
     public float rightRadiusOverride = 80f;   // 像素
 
@@ -35,6 +36,11 @@ public class PlayerHands : MonoBehaviour
     public float extendDuration = 0.08f;      // 手臂伸出去的时间
     public float retractDuration = 0.12f;     // 手臂缩回来的时间
     public float armMinLength = 0.1f;         // 伸缩时的最短“距离”，防止除以 0
+
+    [Header("Aim Assist")]
+    public RectTransform aimAssistCircle;     // 鼠标跟随的瞄准圈（Canvas 上的 Image）
+    public bool enableAimAssist = true;
+    public float aimAssistMaxWorldDistance = 30f; // 自动瞄准敌人的最大世界距离
 
     // 当前每只手拿的物体
     private PickupItem leftHeldItem;
@@ -93,7 +99,7 @@ public class PlayerHands : MonoBehaviour
             }
             else
             {
-                // 左手按鼠标方向扔球（交给 ThrowableBall 直线飞）
+                // 左手按鼠标方向 / 自动瞄准扔球
                 ThrowFromHand(true, ref leftHeldItem);
             }
         }
@@ -116,9 +122,15 @@ public class PlayerHands : MonoBehaviour
             }
             else
             {
-                // 右手按鼠标方向扔球（交给 ThrowableBall 直线飞）
+                // 右手按鼠标方向 / 自动瞄准扔球
                 ThrowFromHand(false, ref rightHeldItem);
             }
+        }
+
+        // 鼠标瞄准圈跟着鼠标移动
+        if (aimAssistCircle != null)
+        {
+            aimAssistCircle.position = Input.mousePosition;
         }
     }
 
@@ -153,7 +165,10 @@ public class PlayerHands : MonoBehaviour
         float radius = GetCircleRadiusPixels(grabCircle, radiusOverride);
         if (radius <= 0f) return;
 
-        PickupItem[] allItems = FindObjectsOfType<PickupItem>();
+        PickupItem[] allItems = FindObjectsByType<PickupItem>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None
+        );
         if (allItems == null || allItems.Length == 0) return;
 
         PickupItem bestItem = null;
@@ -233,7 +248,7 @@ public class PlayerHands : MonoBehaviour
         if (handBase == null || handArm == null || item == null) yield break;
 
         if (isLeftHand) leftHandBusy = true;
-        else rightHandBusy = false;
+        else rightHandBusy = true;
 
         item.isHeld = true;
         item.wasThrownByPlayer = false;
@@ -328,7 +343,7 @@ public class PlayerHands : MonoBehaviour
     }
 
     /// <summary>
-    /// 从鼠标位置计算扔球方向：鼠标 = 瞄准点。
+    /// 最基础的鼠标扔球方向（摄像机射线）。
     /// </summary>
     Vector3 GetThrowDirectionFromMouse()
     {
@@ -340,7 +355,64 @@ public class PlayerHands : MonoBehaviour
     }
 
     /// <summary>
-    /// 从某只手扔出物体：方向由鼠标决定，扔的时候不带物理，交给 ThrowableBall 控制直线飞行。
+    /// 带自动瞄准的扔球方向：
+    /// 1) 默认是鼠标射线方向；
+    /// 2) 如果瞄准圈内有敌人，改成 origin → 敌人的方向。
+    /// </summary>
+    Vector3 GetAutoAimDirectionFromMouse(Vector3 originWorldPos)
+    {
+        Vector3 baseDir = GetThrowDirectionFromMouse();
+
+        if (!enableAimAssist || cam == null || aimAssistCircle == null)
+            return baseDir;
+
+        Vector2 circleCenter = aimAssistCircle.position;
+        float radius = aimAssistCircle.rect.width * aimAssistCircle.lossyScale.x * 0.5f;
+        if (radius <= 0f) return baseDir;
+
+        EnemyHealth[] enemies = FindObjectsByType<EnemyHealth>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None
+        );
+
+        EnemyHealth bestTarget = null;
+        float bestSqrScreenDist = float.MaxValue;
+
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null) continue;
+            Transform et = enemy.transform;
+
+            Vector3 screenPos = cam.WorldToScreenPoint(et.position);
+            if (screenPos.z <= 0f) continue;
+
+            float worldDist = Vector3.Distance(originWorldPos, et.position);
+            if (worldDist > aimAssistMaxWorldDistance) continue;
+
+            Vector2 screen2D = new Vector2(screenPos.x, screenPos.y);
+            float sqrScreenDist = (screen2D - circleCenter).sqrMagnitude;
+
+            if (sqrScreenDist > radius * radius) continue;
+
+            if (sqrScreenDist < bestSqrScreenDist)
+            {
+                bestSqrScreenDist = sqrScreenDist;
+                bestTarget = enemy;
+            }
+        }
+
+        if (bestTarget == null)
+        {
+            return baseDir;
+        }
+
+        Vector3 targetPos = bestTarget.transform.position;
+        Vector3 aimDir = (targetPos - originWorldPos).normalized;
+        return aimDir;
+    }
+
+    /// <summary>
+    /// 从某只手扔出物体：方向由鼠标+自动瞄准决定，扔时交给 ThrowableBall 控制直线飞行。
     /// </summary>
     void ThrowFromHand(bool isLeftHand, ref PickupItem handSlot)
     {
@@ -355,9 +427,11 @@ public class PlayerHands : MonoBehaviour
         Transform t = item.transform;
         t.SetParent(null);
 
-        Vector3 throwDir = GetThrowDirectionFromMouse();
+        Transform handBase = isLeftHand ? leftHandBase : rightHandBase;
+        Vector3 origin = (handBase != null) ? handBase.position : t.position;
 
-        // 先尝试用 ThrowableBall 控制“直线飞行 → 碰撞后开启物理弹跳”
+        Vector3 throwDir = GetAutoAimDirectionFromMouse(origin);
+
         ThrowableBall projectile = item.GetComponent<ThrowableBall>();
 
         if (projectile != null)
@@ -366,7 +440,6 @@ public class PlayerHands : MonoBehaviour
         }
         else
         {
-            // 如果没有挂脚本，就简单用物理直线扔一下（兜底）
             Rigidbody rb = item.GetComponent<Rigidbody>();
             if (rb != null)
             {

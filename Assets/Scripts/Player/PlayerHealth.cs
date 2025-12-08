@@ -1,19 +1,47 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
+// AI-assisted: player health with smooth UI and death handling.
 public class PlayerHealth : MonoBehaviour
 {
-    public int maxHealth = 5;
+    [Header("Health")]
+    public int maxHealth = 100;
     public int currentHealth;
 
+    [Header("UI")]
     public Slider healthSlider;
+    [Tooltip("血条 UI 平滑变化速度")]
+    public float uiLerpSpeed = 8f;
 
+    private float targetHealth01 = 1f;
     private bool isDead = false;
 
     void Start()
     {
         currentHealth = maxHealth;
-        UpdateHealthUI();
+        targetHealth01 = 1f;
+
+        if (healthSlider != null)
+        {
+            healthSlider.minValue = 0f;
+            healthSlider.maxValue = 1f;
+            healthSlider.value = 1f;
+        }
+    }
+
+    void Update()
+    {
+        // 只负责让 UI 慢慢接近 targetHealth01
+        if (healthSlider != null)
+        {
+            float current = healthSlider.value;
+            float desired = targetHealth01;
+            healthSlider.value = Mathf.MoveTowards(
+                current,
+                desired,
+                uiLerpSpeed * Time.unscaledDeltaTime
+            );
+        }
     }
 
     public void TakeDamage(int amount)
@@ -21,10 +49,9 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
 
         currentHealth -= amount;
-        if (currentHealth < 0)
-            currentHealth = 0;
+        if (currentHealth < 0) currentHealth = 0;
 
-        UpdateHealthUI();
+        targetHealth01 = maxHealth > 0 ? (float)currentHealth / maxHealth : 0f;
 
         if (currentHealth <= 0)
         {
@@ -37,25 +64,22 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
 
         currentHealth += amount;
-        if (currentHealth > maxHealth)
-            currentHealth = maxHealth;
+        if (currentHealth > maxHealth) currentHealth = maxHealth;
 
-        UpdateHealthUI();
-    }
-
-    void UpdateHealthUI()
-    {
-        if (healthSlider != null)
-        {
-            // 用 0~1 表示当前血量百分比
-            healthSlider.value = (float)currentHealth / maxHealth;
-        }
+        targetHealth01 = maxHealth > 0 ? (float)currentHealth / maxHealth : 0f;
     }
 
     void Die()
     {
+        if (isDead) return;
         isDead = true;
-        Debug.Log("Player died");
-        // 后面可以在这里加死亡 UI / 禁止操作
+
+        var ui = FindFirstObjectByType<GameStateUI>();
+        if (ui != null)
+        {
+            ui.ShowDeath();
+        }
+
+        // TODO：可以在这里禁用玩家移动、输入脚本等
     }
 }
