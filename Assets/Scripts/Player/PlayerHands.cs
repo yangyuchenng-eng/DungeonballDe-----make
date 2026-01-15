@@ -1,9 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
 // AI-assisted script: structure and some code snippets generated with ChatGPT,
 // then adapted and integrated by the student.
+// IMPROVED: 使用 try-finally 确保协程安全，集成 Manager 模式优化性能
 
 public class PlayerHands : MonoBehaviour
 {
@@ -18,7 +19,7 @@ public class PlayerHands : MonoBehaviour
     public Transform leftHandArm;
     public Transform rightHandArm;
 
-    // 左右手的 2D 准星圈（Canvas 上的圆形 Image）——只用于“抓”的范围
+    // 左右手的 2D 准星圈（Canvas 上的圆形 Image）——只用于"抓"的范围
     public RectTransform leftGrabCircle;
     public RectTransform rightGrabCircle;
 
@@ -35,7 +36,7 @@ public class PlayerHands : MonoBehaviour
     [Header("Arm Animation")]
     public float extendDuration = 0.08f;      // 手臂伸出去的时间
     public float retractDuration = 0.12f;     // 手臂缩回来的时间
-    public float armMinLength = 0.1f;         // 伸缩时的最短“距离”，防止除以 0
+    public float armMinLength = 0.1f;         // 伸缩时的最短"距离"，防止除以 0
 
     [Header("Aim Assist")]
     public RectTransform aimAssistCircle;     // 鼠标跟随的瞄准圈（Canvas 上的 Image）
@@ -151,6 +152,7 @@ public class PlayerHands : MonoBehaviour
 
     /// <summary>
     /// 利用 2D 圆准星，在屏幕空间选出一个可抓物体，然后用手臂抓。
+    /// IMPROVED: 尝试使用 PickupItemManager（如果存在），否则降级到 FindObjectsByType
     /// </summary>
     void TryGrabWithHand(
         bool isLeftHand,
@@ -165,10 +167,23 @@ public class PlayerHands : MonoBehaviour
         float radius = GetCircleRadiusPixels(grabCircle, radiusOverride);
         if (radius <= 0f) return;
 
-        PickupItem[] allItems = FindObjectsByType<PickupItem>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
+        // IMPROVED: 优先使用 PickupItemManager，如果不存在则降级到 FindObjectsByType
+        PickupItem[] allItems = null;
+
+        PickupItemManager manager = PickupItemManager.Instance;
+        if (manager != null)
+        {
+            allItems = manager.GetAllPickupItems();
+        }
+        else
+        {
+            // 降级方案：使用 FindObjectsByType（性能较差，但保证兼容性）
+            allItems = FindObjectsByType<PickupItem>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None
+            );
+        }
+
         if (allItems == null || allItems.Length == 0) return;
 
         PickupItem bestItem = null;
@@ -235,6 +250,7 @@ public class PlayerHands : MonoBehaviour
 
     /// <summary>
     /// 手臂从原姿势 → 伸到物体 → 带着物体缩回原姿势。
+    /// IMPROVED: 使用 try-finally 确保状态锁一定会被释放，即使协程中途异常也能正确清理
     /// </summary>
     IEnumerator ArmGrabCoroutine(
         bool isLeftHand,
@@ -250,79 +266,85 @@ public class PlayerHands : MonoBehaviour
         if (isLeftHand) leftHandBusy = true;
         else rightHandBusy = true;
 
-        item.isHeld = true;
-        item.wasThrownByPlayer = false;
-
-        Rigidbody rb = item.GetComponent<Rigidbody>();
-        if (rb != null)
+        try
         {
-            rb.isKinematic = true;
-            rb.useGravity = false;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            item.isHeld = true;
+            item.wasThrownByPlayer = false;
+
+            Rigidbody rb = item.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            Vector3 handPos = handBase.position;
+            Vector3 itemPos = item.transform.position;
+            Vector3 dir = itemPos - handPos;
+            float totalDist = dir.magnitude;
+            if (totalDist < armMinLength) totalDist = armMinLength;
+            Vector3 dirNorm = dir / totalDist;
+
+            // 阶段 1：伸出去
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime / extendDuration;
+                if (t > 1f) t = 1f;
+
+                float currentDist = Mathf.Lerp(armMinLength, totalDist, t);
+                Vector3 midPoint = handPos + dirNorm * (currentDist * 0.5f);
+                handArm.position = midPoint;
+                handArm.up = dirNorm;
+
+                handArm.localScale = new Vector3(
+                    armOrigLocalScale.x,
+                    currentDist * 0.5f,
+                    armOrigLocalScale.z
+                );
+
+                yield return null;
+            }
+
+            // 阶段 2：带着物体缩回来
+            t = 0f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime / retractDuration;
+                if (t > 1f) t = 1f;
+
+                float currentDist = Mathf.Lerp(totalDist, armMinLength, t);
+
+                Vector3 midPoint = handPos + dirNorm * (currentDist * 0.5f);
+                handArm.position = midPoint;
+                handArm.up = dirNorm;
+
+                handArm.localScale = new Vector3(
+                    armOrigLocalScale.x,
+                    currentDist * 0.5f,
+                    armOrigLocalScale.z
+                );
+
+                Vector3 tipPos = handPos + dirNorm * currentDist;
+                item.transform.position = tipPos;
+
+                yield return null;
+            }
+
+            AttachItemToHand(isLeftHand, handBase, item);
+
+            handArm.localPosition = armOrigLocalPos;
+            handArm.localRotation = armOrigLocalRot;
+            handArm.localScale = armOrigLocalScale;
         }
-
-        Vector3 handPos = handBase.position;
-        Vector3 itemPos = item.transform.position;
-        Vector3 dir = itemPos - handPos;
-        float totalDist = dir.magnitude;
-        if (totalDist < armMinLength) totalDist = armMinLength;
-        Vector3 dirNorm = dir / totalDist;
-
-        // 阶段 1：伸出去
-        float t = 0f;
-        while (t < 1f)
+        finally
         {
-            t += Time.deltaTime / extendDuration;
-            if (t > 1f) t = 1f;
-
-            float currentDist = Mathf.Lerp(armMinLength, totalDist, t);
-            Vector3 midPoint = handPos + dirNorm * (currentDist * 0.5f);
-            handArm.position = midPoint;
-            handArm.up = dirNorm;
-
-            handArm.localScale = new Vector3(
-                armOrigLocalScale.x,
-                currentDist * 0.5f,
-                armOrigLocalScale.z
-            );
-
-            yield return null;
+            // IMPROVED: 无论协程是正常结束还是异常退出，状态锁一定会被释放
+            if (isLeftHand) leftHandBusy = false;
+            else rightHandBusy = false;
         }
-
-        // 阶段 2：带着物体缩回来
-        t = 0f;
-        while (t < 1f)
-        {
-            t += Time.deltaTime / retractDuration;
-            if (t > 1f) t = 1f;
-
-            float currentDist = Mathf.Lerp(totalDist, armMinLength, t);
-
-            Vector3 midPoint = handPos + dirNorm * (currentDist * 0.5f);
-            handArm.position = midPoint;
-            handArm.up = dirNorm;
-
-            handArm.localScale = new Vector3(
-                armOrigLocalScale.x,
-                currentDist * 0.5f,
-                armOrigLocalScale.z
-            );
-
-            Vector3 tipPos = handPos + dirNorm * currentDist;
-            item.transform.position = tipPos;
-
-            yield return null;
-        }
-
-        AttachItemToHand(isLeftHand, handBase, item);
-
-        handArm.localPosition = armOrigLocalPos;
-        handArm.localRotation = armOrigLocalRot;
-        handArm.localScale = armOrigLocalScale;
-
-        if (isLeftHand) leftHandBusy = false;
-        else rightHandBusy = false;
     }
 
     void AttachItemToHand(bool isLeftHand, Transform handBase, PickupItem item)
@@ -358,6 +380,7 @@ public class PlayerHands : MonoBehaviour
     /// 带自动瞄准的扔球方向：
     /// 1) 默认是鼠标射线方向；
     /// 2) 如果瞄准圈内有敌人，改成 origin → 敌人的方向。
+    /// IMPROVED: 尝试使用 EnemyManager（如果存在），否则降级到 FindObjectsByType
     /// </summary>
     Vector3 GetAutoAimDirectionFromMouse(Vector3 originWorldPos)
     {
@@ -370,10 +393,25 @@ public class PlayerHands : MonoBehaviour
         float radius = aimAssistCircle.rect.width * aimAssistCircle.lossyScale.x * 0.5f;
         if (radius <= 0f) return baseDir;
 
-        EnemyHealth[] enemies = FindObjectsByType<EnemyHealth>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
+        // IMPROVED: 优先使用 EnemyManager，如果不存在则降级到 FindObjectsByType
+        EnemyHealth[] enemies = null;
+
+        EnemyManager enemyManager = EnemyManager.Instance;
+        if (enemyManager != null)
+        {
+            enemies = enemyManager.GetAllEnemies();
+        }
+        else
+        {
+            // 降级方案：使用 FindObjectsByType（性能较差，但保证兼容性）
+            enemies = FindObjectsByType<EnemyHealth>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None
+            );
+        }
+
+        if (enemies == null || enemies.Length == 0)
+            return baseDir;
 
         EnemyHealth bestTarget = null;
         float bestSqrScreenDist = float.MaxValue;

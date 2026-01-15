@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 // AI-assisted: player health with smooth UI and death handling.
+// IMPROVED: 在 Die() 方法中禁用玩家的输入脚本，防止死亡后还能操控
 public class PlayerHealth : MonoBehaviour
 {
     [Header("Health")]
@@ -74,12 +75,23 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
         isDead = true;
 
+        // IMPROVED: 禁用玩家的输入和移动脚本，防止死亡后还能操控
+        SimpleFPSMovement movement = GetComponent<SimpleFPSMovement>();
+        if (movement != null)
+        {
+            movement.enabled = false;
+        }
+
+        PlayerHands hands = GetComponent<PlayerHands>();
+        if (hands != null)
+        {
+            hands.enabled = false;
+        }
+
         var ui = FindFirstObjectByType<GameStateUI>();
         if (ui != null)
         {
             ui.ShowDeath();
         }
-
-        // TODO：可以在这里禁用玩家移动、输入脚本等
     }
 }

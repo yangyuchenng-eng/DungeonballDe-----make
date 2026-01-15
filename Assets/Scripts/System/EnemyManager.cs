@@ -1,7 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 // AI-assisted: structure & parts generated with ChatGPT, then adapted by the student.
+// IMPROVED: 维护敌人列表，避免 PlayerHands 中频繁使用 FindObjectsByType
 public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager Instance { get; private set; }
@@ -47,6 +49,9 @@ public class EnemyManager : MonoBehaviour
     private int totalKills = 0;
     private bool keySpawned = false;
 
+    // IMPROVED: 维护敌人列表，而不是每次都 FindObjectsByType
+    private List<EnemyHealth> aliveEnemies = new List<EnemyHealth>();
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -78,8 +83,8 @@ public class EnemyManager : MonoBehaviour
                 yield break;
             }
 
-            // 统计当前存活敌人数量
-            int alive = CountAliveEnemies();
+            // IMPROVED: 使用维护的敌人列表，而不是 FindObjectsByType
+            int alive = aliveEnemies.Count;
 
             // 如果当前存活数 < 最大存活数，就尝试补一只
             if (alive < maxAliveEnemies)
@@ -89,15 +94,6 @@ public class EnemyManager : MonoBehaviour
 
             yield return new WaitForSeconds(spawnInterval);
         }
-    }
-
-    int CountAliveEnemies()
-    {
-        var enemies = FindObjectsByType<EnemyHealth>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
-        return enemies.Length;
     }
 
     void TrySpawnOne()
@@ -155,10 +151,17 @@ public class EnemyManager : MonoBehaviour
 
     /// <summary>
     /// 敌人死亡时调用：增加击杀数，必要时生成钥匙。
+    /// IMPROVED: 同时从列表中移除死亡的敌人
     /// </summary>
     public void RegisterEnemyDeath(EnemyHealth enemy)
     {
         totalKills++;
+
+        // IMPROVED: 从列表中移除死亡的敌人
+        if (enemy != null)
+        {
+            aliveEnemies.Remove(enemy);
+        }
 
         // 达到阈值、还没刷过钥匙，就刷钥匙
         if (!keySpawned && totalKills >= killsForKey)
@@ -178,5 +181,35 @@ public class EnemyManager : MonoBehaviour
         Instantiate(keyPrefab, keySpawnPoint.position, keySpawnPoint.rotation);
         keySpawned = true;
         Debug.Log("[EnemyManager] 击杀数达到要求，生成钥匙。");
+    }
+
+    /// <summary>
+    /// IMPROVED: 注册一个新生成的敌人（由 EnemyHealth 的 Start 或 OnEnable 调用）
+    /// </summary>
+    public void RegisterEnemy(EnemyHealth enemy)
+    {
+        if (enemy != null && !aliveEnemies.Contains(enemy))
+        {
+            aliveEnemies.Add(enemy);
+        }
+    }
+
+    /// <summary>
+    /// IMPROVED: 获取所有当前存活的敌人数组
+    /// </summary>
+    public EnemyHealth[] GetAllEnemies()
+    {
+        // 清理掉已经被销毁的敌人引用
+        aliveEnemies.RemoveAll(e => e == null);
+        return aliveEnemies.ToArray();
+    }
+
+    /// <summary>
+    /// IMPROVED: 获取当前存活敌人的数量
+    /// </summary>
+    public int GetAliveEnemyCount()
+    {
+        aliveEnemies.RemoveAll(e => e == null);
+        return aliveEnemies.Count;
     }
 }

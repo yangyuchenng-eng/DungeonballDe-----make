@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 // AI-assisted: simple enemy health for Dungeonball demo.
+// IMPROVED: 在 Start 时向 EnemyManager 注册自己
 public class EnemyHealth : MonoBehaviour
 {
     [Header("Health")]
@@ -14,6 +15,13 @@ public class EnemyHealth : MonoBehaviour
     void Start()
     {
         currentHealth = maxHealth;
+
+        // IMPROVED: 向 EnemyManager 注册自己
+        EnemyManager manager = EnemyManager.Instance;
+        if (manager != null)
+        {
+            manager.RegisterEnemy(this);
+        }
     }
 
     public void TakeDamage(float amount)

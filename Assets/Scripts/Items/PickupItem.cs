@@ -1,5 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 
+// IMPROVED: 添加向 PickupItemManager 的注册和注销
 public class PickupItem : MonoBehaviour
 {
     [Header("Basic")]
@@ -21,4 +22,24 @@ public class PickupItem : MonoBehaviour
     // 运行时状态（脚本内部用）
     [HideInInspector] public bool isHeld = false;
     [HideInInspector] public bool wasThrownByPlayer = false;
+
+    void OnEnable()
+    {
+        // IMPROVED: 向 PickupItemManager 注册自己
+        PickupItemManager manager = PickupItemManager.Instance;
+        if (manager != null)
+        {
+            manager.RegisterPickupItem(this);
+        }
+    }
+
+    void OnDisable()
+    {
+        // IMPROVED: 向 PickupItemManager 注销自己
+        PickupItemManager manager = PickupItemManager.Instance;
+        if (manager != null)
+        {
+            manager.UnregisterPickupItem(this);
+        }
+    }
 }
