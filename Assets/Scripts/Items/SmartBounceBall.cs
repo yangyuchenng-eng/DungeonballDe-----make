@@ -1,18 +1,17 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 // AI-assisted script for custom bounce behaviour:
 // - 撞 "墙"（wallLayers）：强烈反弹，适合在墙角来回横弹
 // - 撞 "地"（floorLayers）：不再往上弹，只保留一点水平速度
 // - 其他碰撞体：用法线判定，大概归类成地/墙
-// IMPROVED: 整合了 BouncyBallPhysics 的功能（水平阻尼、速度限制）到这个脚本中
 [RequireComponent(typeof(Rigidbody), typeof(Collider))]
 public class SmartBounceBall : MonoBehaviour
 {
     [Header("Layer-based classification")]
-   
+    [Tooltip("被视为“地板”的 Layer（例如 Floor、Ground），优先级最高")]
     public LayerMask floorLayers;
 
-   
+    [Tooltip("被视为“墙/障碍物”的 Layer（例如 Wall），优先级第二")]
     public LayerMask wallLayers;
 
     [Header("Wall bounce settings")]
@@ -28,16 +27,6 @@ public class SmartBounceBall : MonoBehaviour
 
     [Tooltip("如果撞地板后速度低于这个值，就直接停住")]
     public float minSpeedToStop = 1.0f;
-
-    [Header("Continuous Damping (IMPROVED)")]
-    [Tooltip("水平速度衰减系数（每秒衰减的百分比）")]
-    public float horizontalDamping = 10f;
-
-    [Tooltip("低于这个速度就直接归零")]
-    public float minHorizontalSpeed = 0.05f;
-
-    [Tooltip("防止竖直速度爆炸的上限")]
-    public float maxVerticalSpeed = 20f;
 
     private Rigidbody rb;
 
@@ -131,8 +120,7 @@ public class SmartBounceBall : MonoBehaviour
 
     void HandleWallHit(Vector3 v, Vector3 normal)
     {
-        // IMPROVED: 增加了对法线有效性的检查，避免无效的反射
-        if (normal == Vector3.zero || normal.sqrMagnitude < 0.1f)
+        if (normal == Vector3.zero)
         {
             // 没拿到正常法线就直接略减速
             rb.linearVelocity = v * wallBounceMultiplier;
@@ -149,38 +137,5 @@ public class SmartBounceBall : MonoBehaviour
         reflected.y = reflected.y * wallVerticalKeep;
 
         rb.linearVelocity = reflected;
-    }
-
-    // IMPROVED: 在 FixedUpdate 中应用连续的物理衰减，整合了 BouncyBallPhysics 的功能
-    void FixedUpdate()
-    {
-        if (rb == null) return;
-
-        Vector3 v = rb.linearVelocity;
-
-        // 水平方向（XZ）衰减，避免长时间滚动/滑动
-        Vector3 horizontal = new Vector3(v.x, 0f, v.z);
-        float speed = horizontal.magnitude;
-
-        if (speed > 0f)
-        {
-            // 指数衰减
-            float damp = 1f - horizontalDamping * Time.fixedDeltaTime;
-            if (damp < 0f) damp = 0f;
-            horizontal *= damp;
-
-            // 如果已经很慢，就直接归零
-            if (horizontal.magnitude < minHorizontalSpeed)
-            {
-                horizontal = Vector3.zero;
-            }
-        }
-
-        // 限制竖直速度，避免弹到天上乱飞
-        float vy = Mathf.Clamp(v.y, -maxVerticalSpeed, maxVerticalSpeed);
-
-        rb.linearVelocity = new Vector3(horizontal.x, vy, horizontal.z);
-        // 额外保险：基本不转动
-        rb.angularVelocity = Vector3.zero;
     }
 }

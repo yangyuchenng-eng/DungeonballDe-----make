@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
+// IMPROVED: 调整能量消耗速度（加倍）和恢复时间（减为三分之一）
 public class BulletTimeManager : MonoBehaviour
 {
     public KeyCode bulletTimeKey = KeyCode.Mouse2; // 鼠标中键
@@ -11,8 +12,8 @@ public class BulletTimeManager : MonoBehaviour
 
     [Header("Energy Settings")]
     public float maxEnergy = 5f;          // 最大能量（秒数大致 = 可持续子弹时间）
-    public float drainPerSecond = 1f;     // 子弹时间时每秒消耗多少能量
-    public float regenPerSecond = 0.5f;   // 非子弹时间时每秒恢复多少能量
+    public float drainPerSecond = 2f;     // IMPROVED: 子弹时间时每秒消耗多少能量（从 1f 改为 2f，加倍）
+    public float regenPerSecond = 0.1f;   // IMPROVED: 非子弹时间时每秒恢复多少能量（从 0.5f 改为 1.5f，三倍）
 
     [Header("UI")]
     public Slider energySlider;

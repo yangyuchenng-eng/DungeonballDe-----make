@@ -14,7 +14,8 @@ public class SimpleFPSMovement : MonoBehaviour
 
     [Header("Mouse Look")]
     public float mouseSensitivity = 2f;
-    public float maxLookAngle = 90f;  // 俯仰角限制（防止视角翻转）
+    public float maxLookUp = 20f;      // 向上看的最大角度（不需要看天花板）
+    public float maxLookDown = 30f;    // 向下看的最大角度（看脚底的球）
 
     [Header("Physics")]
     public float gravity = -9.81f;
@@ -60,9 +61,11 @@ public class SimpleFPSMovement : MonoBehaviour
         // 水平旋转玩家（绕 Y 轴）
         transform.Rotate(Vector3.up, mouseX);
 
-        // 垂直旋转摄像机（绕 X 轴），并限制俯仰角
+        // 垂直旋转摄像机（绕 X 轴），使用不对称的视野限制
+        // 向下看 30 度：看脚底的球
+        // 向上看 20 度：不需要看天花板，但保留一点上视野
         currentPitch -= mouseY;
-        currentPitch = Mathf.Clamp(currentPitch, -maxLookAngle, maxLookAngle);
+        currentPitch = Mathf.Clamp(currentPitch, -maxLookUp, maxLookDown);
 
         if (cam != null)
         {
