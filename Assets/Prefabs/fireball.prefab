@@ -16,10 +16,11 @@ GameObject:
   - component: {fileID: 3569209162179716608}
   - component: {fileID: 6369729096838688622}
   - component: {fileID: 2074934759806996775}
-  - component: {fileID: 9204765200371151357}
+  - component: {fileID: -2453962680567047093}
+  - component: {fileID: 7203631488437410782}
   m_Layer: 3
-  m_Name: Ball
-  m_TagString: Untagged
+  m_Name: fireball
+  m_TagString: fireball
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -70,7 +71,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f75c538de35e142429545fa2648b664f, type: 2}
+  - {fileID: 2100000, guid: 4c611156328fe1a499be09601fafadba, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -152,7 +153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ead22ec251acc6f4081dfb103afa7a14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Ball
+  itemName: fireball
   isPickupable: 1
   holdable: 1
   throwable: 1
@@ -199,7 +200,7 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &9204765200371151357
+--- !u!114 &-2453962680567047093
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -208,16 +209,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 3570678021368661859}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 50f0e7580f7ba2b40b774afabaabbffd, type: 3}
+  m_Script: {fileID: 11500000, guid: 36f55f2c7e1897d45b5cbb7154b0f8dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  floorLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  wallLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  wallBounceMultiplier: 0.9
-  wallVerticalKeep: 0.3
-  floorHorizontalDamping: 0.6
-  minSpeedToStop: 1
+--- !u!114 &7203631488437410782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3570678021368661859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9abaa65b407ac9242aca3d3051d8d59f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageToEnemies: 999
+  damageToPlayer: 20
+  damagesEnemies: 1
+  damagesPlayer: 0
+  isEnemyProjectile: 0

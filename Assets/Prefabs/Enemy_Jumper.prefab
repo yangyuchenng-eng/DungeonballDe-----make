@@ -16,9 +16,16 @@ GameObject:
   - component: {fileID: 1967409978939619380}
   - component: {fileID: 8031092832817658496}
   - component: {fileID: 702070649839023620}
-  m_Layer: 0
+  - component: {fileID: -6251969029526455928}
+  - component: {fileID: 6994822133053141635}
+  - component: {fileID: -4345823350901035943}
+  - component: {fileID: 1267302770087503157}
+  - component: {fileID: -3287272135048678630}
+  - component: {fileID: 2296170293197290116}
+  - component: {fileID: 3281498027521725765}
+  m_Layer: 8
   m_Name: Enemy_Jumper
-  m_TagString: Enemy
+  m_TagString: slime
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -106,12 +113,12 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.6055188, y: 1.2473891, z: 1.2222097}
-  m_Center: {x: 0.00830166, y: 0.12369354, z: -0.11110474}
+  m_Size: {x: 1.6055188, y: 1.077857, z: 1.3043529}
+  m_Center: {x: 0.008301675, y: 0.038927525, z: -0.15217632}
 --- !u!114 &719330736796332629
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -174,3 +181,124 @@ MonoBehaviour:
   damagePerHit: 10
   damageInterval: 1
   playerTag: Player
+  allowedTags:
+  - slime
+--- !u!54 &-6251969029526455928
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456118597604237830}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 2
+--- !u!114 &6994822133053141635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456118597604237830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ead22ec251acc6f4081dfb103afa7a14, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemName: Item
+  isPickupable: 1
+  holdable: 1
+  throwable: 1
+  dealsDamageWhenThrown: 1
+  damageAmount: 1
+  isKey: 0
+  keyID: 
+  isHeld: 0
+  wasThrownByPlayer: 0
+--- !u!114 &-4345823350901035943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456118597604237830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afd66dbd695481145be164df158ecb4a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1267302770087503157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456118597604237830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36f55f2c7e1897d45b5cbb7154b0f8dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-3287272135048678630
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456118597604237830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d9ccf3488e2a5745aff0d483b0d3804, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerTag: Player
+--- !u!114 &2296170293197290116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456118597604237830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 503ff668e5be50f43ae15a582c3a7e37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  maxFlightTime: 5
+--- !u!114 &3281498027521725765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456118597604237830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9abaa65b407ac9242aca3d3051d8d59f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageToEnemies: 999
+  damageToPlayer: 20
+  damagesEnemies: 1
+  damagesPlayer: 0
+  isEnemyProjectile: 0

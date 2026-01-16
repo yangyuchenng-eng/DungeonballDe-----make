@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 3
   tags:
   - Enemy
+  - fireball
+  - slime
+  - rock
   layers:
   - Default
   - TransparentFX
@@ -14,8 +17,8 @@ TagManager:
   - UI
   - Wall
   - Floor
-  - 
-  - 
+  - Enemy
+  - Picked
   - 
   - 
   - 

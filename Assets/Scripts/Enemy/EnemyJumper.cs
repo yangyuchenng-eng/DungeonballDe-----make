@@ -1,7 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 // AI-assisted base jumper enemy for Dungeonball demo.
+// 修改：添加 tag 检测，只有 tag 是 "slime" 时才运行 AI
 [RequireComponent(typeof(Collider))]
 public class EnemyJumper : MonoBehaviour
 {
@@ -35,6 +36,13 @@ public class EnemyJumper : MonoBehaviour
     {
         while (isMoving)
         {
+            // --- 新增：只有 tag 是 "slime" 时才运行 AI ---
+            if (!gameObject.CompareTag("slime"))
+            {
+                yield return null;
+                continue;
+            }
+
             if (player == null)
             {
                 yield return null;
@@ -58,7 +66,7 @@ public class EnemyJumper : MonoBehaviour
 
                 if (distance > stopDistance)
                 {
-                    // 做一次“向前的跳跃”
+                    // 做一次"向前的跳跃"
                     yield return StartCoroutine(HopStep(dir));
                     // 跳完歇一小会
                     yield return new WaitForSeconds(idleBetweenHops);
@@ -73,6 +81,12 @@ public class EnemyJumper : MonoBehaviour
 
     IEnumerator HopStep(Vector3 dir)
     {
+        // --- 新增：在跳跃过程中也检测 tag ---
+        if (!gameObject.CompareTag("slime"))
+        {
+            yield break;
+        }
+
         float t = 0f;
         Vector3 startPos = transform.position;
 
