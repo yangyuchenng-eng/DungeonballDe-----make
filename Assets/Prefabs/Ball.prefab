@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 6369729096838688622}
   - component: {fileID: 2074934759806996775}
   - component: {fileID: 9204765200371151357}
+  - component: {fileID: -4814255544941053014}
   m_Layer: 3
   m_Name: Ball
   m_TagString: Untagged
@@ -176,8 +177,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1472
   maxFlightTime: 5
+  keepColliderEnabledWhileFlying: 1
+  sphereCastRadiusMultiplier: 0.95
+  extraCastDistance: 0.02
+  hitNudge: 0.02
+  bounceSpeedMultiplier: 0.9
+  destroyFireballOnRaycastHit: 1
+  normalizeEnemyBallAfterHittingPlayer: 1
 --- !u!135 &2074934759806996775
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -221,3 +229,20 @@ MonoBehaviour:
   wallVerticalKeep: 0.3
   floorHorizontalDamping: 0.6
   minSpeedToStop: 1
+--- !u!114 &-4814255544941053014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3570678021368661859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9abaa65b407ac9242aca3d3051d8d59f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageToEnemies: 999
+  damageToPlayer: 10
+  damagesEnemies: 1
+  damagesPlayer: 1
+  isEnemyProjectile: 0

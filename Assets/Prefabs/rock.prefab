@@ -178,8 +178,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1472
   maxFlightTime: 5
+  applyDamageOnRaycastHit: 1
+  enterPhysicsAfterHit: 1
+  normalizeEnemyBallAfterHittingPlayer: 1
+  bounceSpeedMultiplier: 0.9
+  destroyFireballOnRaycastHit: 1
 --- !u!135 &2074934759806996775
 SphereCollider:
   m_ObjectHideFlags: 0

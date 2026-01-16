@@ -19,8 +19,8 @@ TagManager:
   - Floor
   - Enemy
   - Picked
-  - 
-  - 
+  - Player
+  - DamageTrigger
   - 
   - 
   - 

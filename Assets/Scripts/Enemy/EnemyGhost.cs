@@ -1,216 +1,205 @@
-using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// 幽灵敌人：在空中飞行，会寻找并捡起地上静止的球，然后扔向玩家
-/// 只捡 Layer 是 "Pickup" 且速度接近 0 的球
-/// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyGhost : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 4f;
-    public float rotationSpeed = 3f;
+    public float rotationSpeed = 8f;
+    public bool ignoreVertical = true;
 
-    [Header("Ball Pickup")]
-    public float pickupRange = 2f;              // 捡球的范围
-    public float pickupSpeedThreshold = 0.5f;   // 只捡速度低于这个值的球
-    public Transform handTransform;             // 手的位置（球会被放在这里）
+    [Header("Search")]
+    public float searchInterval = 0.5f;
 
-    [Header("Throw Settings")]
+    [Header("Pickup Trigger")]
+    [Tooltip("放一个 SphereCollider(Trigger) 在这个物体或子物体上，用来检测球")]
+    public Collider pickupTrigger;
+
+    [Tooltip("只捡 Pickup layer 的球（推荐）")]
+    public string pickupLayerName = "Pickup";
+
+    [Tooltip("拿在手里时改成这个 layer（并在矩阵里关闭 Picked<->Enemy 碰撞）")]
+    public string pickedLayerName = "Picked";
+
+    [Header("Hand / Holding")]
+    public Transform handTransform;
+    public Vector3 holdLocalPos = Vector3.zero;
+    public Vector3 holdLocalEuler = Vector3.zero;
+
+    [Header("Throw")]
     public float throwSpeed = 15f;
-    public float throwCooldown = 2f;            // 扔完球后的冷却时间
+    public float throwCooldown = 2f;
 
+    [Header("Debug")]
+    public bool debugLogs = false;
+
+    private Rigidbody rb;
     private Transform player;
-    private PickupItem heldBall;                // 当前手里的球
+
+    private PickupItem targetBall;
+    private PickupItem heldBall;
+
+    private float nextSearchTime = 0f;
     private float lastThrowTime = -999f;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
 
     void Start()
     {
-        var playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-        {
-            player = playerObj.transform;
-        }
+        rb.useGravity = false;
+        rb.freezeRotation = true;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
-        if (handTransform == null)
-        {
-            handTransform = transform;
-        }
+        if (handTransform == null) handTransform = transform;
 
-        StartCoroutine(GhostAI());
+        if (pickupTrigger == null)
+            Debug.LogWarning("[EnemyGhost] pickupTrigger 没设置！请拖一个 SphereCollider(Trigger) 进来。", this);
+
+        FindPlayer();
     }
 
-    IEnumerator GhostAI()
+    void FixedUpdate()
     {
-        while (true)
+        if (player == null)
         {
-            if (player == null)
-            {
-                yield return new WaitForSeconds(0.5f);
-                continue;
-            }
+            FindPlayer();
+            return;
+        }
 
-            // 如果手里没有球，就去找球
-            if (heldBall == null)
-            {
-                PickupItem nearestBall = FindNearestPickupableBall();
-                if (nearestBall != null)
-                {
-                    // 飞向球
-                    yield return StartCoroutine(FlyToBall(nearestBall));
-                }
-                else
-                {
-                    // 没有球可捡，就飞向玩家
-                    FlyTowardsPlayer();
-                }
-            }
+        if (heldBall == null && Time.time >= nextSearchTime)
+        {
+            targetBall = FindNearestPickupBall();
+            nextSearchTime = Time.time + searchInterval;
+
+            if (debugLogs)
+                Debug.Log($"[EnemyGhost] Search targetBall = {(targetBall ? targetBall.name : "null")}", this);
+        }
+
+        if (heldBall == null)
+        {
+            if (targetBall != null && !targetBall.isHeld)
+                MoveTowards(targetBall.transform.position);
             else
-            {
-                // 手里有球，飞向玩家并准备扔球
-                FlyTowardsPlayer();
-
-                // 如果冷却时间到了，就扔球
-                if (Time.time - lastThrowTime >= throwCooldown)
-                {
-                    ThrowBallAtPlayer();
-                }
-            }
-
-            yield return null;
+                MoveTowards(player.position);
         }
-    }
-
-    /// <summary>
-    /// 寻找最近的可捡的球（Layer 是 "Pickup" 且静止）
-    /// </summary>
-    PickupItem FindNearestPickupableBall()
-    {
-        PickupItem[] allItems = FindObjectsByType<PickupItem>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
-
-        PickupItem nearest = null;
-        float nearestDist = float.MaxValue;
-
-        int pickupLayer = LayerMask.NameToLayer("Pickup");
-
-        foreach (var item in allItems)
+        else
         {
-            if (item == null) continue;
-            if (!item.isPickupable) continue;
-            if (item.isHeld) continue;
+            MoveTowards(player.position);
 
-            // 只捡 Layer 是 "Pickup" 的球
-            if (item.gameObject.layer != pickupLayer) continue;
-
-            // 只捡静止的球
-            Rigidbody rb = item.GetComponent<Rigidbody>();
-            if (rb != null && rb.linearVelocity.magnitude > pickupSpeedThreshold)
-            {
-                continue;
-            }
-
-            float dist = Vector3.Distance(transform.position, item.transform.position);
-            if (dist < nearestDist)
-            {
-                nearestDist = dist;
-                nearest = item;
-            }
+            if (Time.time - lastThrowTime >= throwCooldown)
+                ThrowHeldBall();
         }
-
-        return nearest;
     }
 
-    /// <summary>
-    /// 飞向球并捡起它
-    /// </summary>
-    IEnumerator FlyToBall(PickupItem ball)
+    void FindPlayer()
     {
-        while (ball != null && !ball.isHeld && heldBall == null)
-        {
-            Vector3 toBall = ball.transform.position - transform.position;
-            float distance = toBall.magnitude;
+        var p = GameObject.FindGameObjectWithTag("Player");
+        player = p ? p.transform : null;
 
-            if (distance < pickupRange)
-            {
-                // 捡起球
-                PickupBall(ball);
-                yield break;
-            }
-
-            // 飞向球
-            Vector3 direction = toBall.normalized;
-            GetComponent<Rigidbody>().linearVelocity = direction * moveSpeed;
-
-            // 转向球
-            if (toBall.sqrMagnitude > 0.01f)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(direction);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-            }
-
-            yield return null;
-        }
+        if (debugLogs && player == null)
+            Debug.LogWarning("[EnemyGhost] 找不到 Tag=Player 的对象！", this);
     }
 
-    /// <summary>
-    /// 飞向玩家
-    /// </summary>
-    void FlyTowardsPlayer()
+    void MoveTowards(Vector3 targetPos)
     {
-        if (player == null) return;
-
-        Vector3 toPlayer = player.position - transform.position;
-        Vector3 direction = toPlayer.normalized;
-
-        GetComponent<Rigidbody>().linearVelocity = direction * moveSpeed;
-
-        // 转向玩家
-        if (toPlayer.sqrMagnitude > 0.01f)
+        Vector3 to = targetPos - transform.position;
+        if (ignoreVertical) to.y = 0f;
+        if (to.sqrMagnitude < 0.0001f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            rb.linearVelocity = Vector3.zero;
+            return;
         }
+
+        Vector3 dir = to.normalized;
+        rb.linearVelocity = dir * moveSpeed;
+
+        Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
+        Quaternion newRot = Quaternion.Slerp(rb.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime);
+        rb.MoveRotation(newRot);
     }
 
-    /// <summary>
-    /// 捡起球
-    /// </summary>
+    PickupItem FindNearestPickupBall()
+    {
+        int pickupLayer = LayerMask.NameToLayer(pickupLayerName); // -1 if not exists
+
+        PickupItem[] all = FindObjectsByType<PickupItem>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        PickupItem best = null;
+        float bestDist = float.MaxValue;
+
+        foreach (var it in all)
+        {
+            if (it == null) continue;
+            if (!it.isPickupable) continue;
+            if (it.isHeld) continue;
+
+            if (pickupLayer != -1 && it.gameObject.layer != pickupLayer) continue;
+
+            float d = Vector3.Distance(transform.position, it.transform.position);
+            if (d < bestDist)
+            {
+                bestDist = d;
+                best = it;
+            }
+        }
+
+        return best;
+    }
+
+    // ✅ 一碰到球就捡：用 Trigger 检测
+    void OnTriggerEnter(Collider other)
+    {
+        if (heldBall != null) return;
+
+        PickupItem ball = other.GetComponentInParent<PickupItem>();
+        if (ball == null) return;
+        if (!ball.isPickupable || ball.isHeld) return;
+
+        int pickupLayer = LayerMask.NameToLayer(pickupLayerName);
+        if (pickupLayer != -1 && ball.gameObject.layer != pickupLayer) return;
+
+        PickupBall(ball);
+    }
+
     void PickupBall(PickupItem ball)
     {
-        if (ball == null) return;
-
         heldBall = ball;
+        targetBall = null;
+
         ball.isHeld = true;
+        ball.wasThrownByPlayer = false;
 
-        // 将球的 Layer 改为 "Picked"
-        int pickedLayer = LayerMask.NameToLayer("Picked");
-        if (pickedLayer != -1)
+        int pickedLayer = LayerMask.NameToLayer(pickedLayerName);
+        if (pickedLayer != -1) ball.gameObject.layer = pickedLayer;
+
+        Rigidbody brb = ball.GetComponent<Rigidbody>();
+        if (brb != null)
         {
-            ball.gameObject.layer = pickedLayer;
+            brb.isKinematic = true;
+            brb.useGravity = false;
+            brb.linearVelocity = Vector3.zero;
+            brb.angularVelocity = Vector3.zero;
         }
 
-        Rigidbody rb = ball.GetComponent<Rigidbody>();
-        if (rb != null)
+        BallDamage bd = ball.GetComponent<BallDamage>();
+        if (bd != null)
         {
-            rb.isKinematic = true;
-            rb.useGravity = false;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            bd.isEnemyProjectile = false;
+            bd.damagesPlayer = false;
+            bd.damagesEnemies = false;
         }
 
+        // 放到手上
         ball.transform.SetParent(handTransform);
-        ball.transform.localPosition = Vector3.zero;
-        ball.transform.localRotation = Quaternion.identity;
+        ball.transform.localPosition = holdLocalPos;
+        ball.transform.localRotation = Quaternion.Euler(holdLocalEuler);
+
+        if (debugLogs) Debug.Log($"[EnemyGhost] Picked {ball.name}", this);
     }
 
-    /// <summary>
-    /// 向玩家扔球
-    /// </summary>
-    void ThrowBallAtPlayer()
+    void ThrowHeldBall()
     {
         if (heldBall == null || player == null) return;
 
@@ -218,33 +207,39 @@ public class EnemyGhost : MonoBehaviour
         heldBall = null;
 
         ball.isHeld = false;
+        ball.wasThrownByPlayer = false;
         ball.transform.SetParent(null);
 
-        // 将球的 Layer 改回 "Pickup"
-        int pickupLayer = LayerMask.NameToLayer("Pickup");
-        if (pickupLayer != -1)
+        int pickupLayer = LayerMask.NameToLayer(pickupLayerName);
+        if (pickupLayer != -1) ball.gameObject.layer = pickupLayer;
+
+        // 扔出去恢复物理
+        Rigidbody brb = ball.GetComponent<Rigidbody>();
+        if (brb != null)
         {
-            ball.gameObject.layer = pickupLayer;
+            brb.isKinematic = false;
+            brb.useGravity = true;
         }
 
-        Vector3 throwDirection = (player.position - ball.transform.position).normalized;
+        // 敌人扔球：标记伤害玩家
+        BallDamage bd = ball.GetComponent<BallDamage>();
+        if (bd != null)
+        {
+            bd.isEnemyProjectile = true;
+            bd.damagesPlayer = true;
+            bd.damagesEnemies = false;
+        }
 
-        ThrowableBall projectile = ball.GetComponent<ThrowableBall>();
-        if (projectile != null)
-        {
-            projectile.BeginKinematicThrow(throwDirection, throwSpeed);
-        }
-        else
-        {
-            Rigidbody rb = ball.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = false;
-                rb.useGravity = true;
-                rb.linearVelocity = throwDirection * throwSpeed;
-            }
-        }
+        Vector3 dir = (player.position - ball.transform.position).normalized;
+
+        ThrowableBall tb = ball.GetComponent<ThrowableBall>();
+        if (tb != null)
+            tb.BeginKinematicThrow(dir, throwSpeed);
+        else if (brb != null)
+            brb.linearVelocity = dir * throwSpeed;
 
         lastThrowTime = Time.time;
+
+        if (debugLogs) Debug.Log("[EnemyGhost] Threw ball", this);
     }
 }
