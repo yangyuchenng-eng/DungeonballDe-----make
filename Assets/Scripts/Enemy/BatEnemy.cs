@@ -3,72 +3,251 @@
 [RequireComponent(typeof(Rigidbody))]
 public class BatEnemy : MonoBehaviour
 {
-    [Header("Target")]
-    public Transform player;
-    public string playerTag = "Player";
+    [Header("Player Target (drag the BODY / model / CharacterController object here)")]
+    public Transform playerTarget;
+    public Collider playerTargetCollider;
 
-    [Header("Flight")]
+    [Header("Look / Front Point")]
+    public float frontDistance = 2.5f;
+    public float arriveTolerance = 0.25f;
     public float flySpeed = 6f;
+    public float returnSpeed = 7f;
     public float turnSpeed = 8f;
-    public float hoverHeightOffset = 1.2f;
-    public float slowDownDistance = 1.5f;
+    public float repathDistance = 0.6f;
 
-    [Header("Touch Damage")]
+    [Header("Dash Attack")]
     public int damagePerHit = 10;
-    public float damageInterval = 0.5f;
+    public float attackCooldown = 1.0f;
+    public float dashDuration = 0.18f;
+    public float dashSpeed = 12f;
 
-    private Rigidbody rb;
-    private float nextDamageTime;
+    [Tooltip("命中判定半径（建议 0.8~1.2）")]
+    public float hitRadius = 1.0f;
+
+    [Header("Height Lock")]
+    public bool lockHeight = true;
+
+    [Header("Model Pose Lock (optional)")]
+    public Transform modelRoot;
+
+    Rigidbody rb;
+    Quaternion modelInitialLocalRot;
+
+    PlayerHealth playerHealth;
+
+    enum State { Approach, Wait, Dash, Return }
+    State state = State.Approach;
+
+    float nextAttackTime;
+    float dashEndTime;
+    bool didDamageThisDash;
+
+    Vector3 lastFrontPointXZ;
+
+    // ✅关键：固定高度，防止越打越矮
+    float fixedY;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.useGravity = false;
 
-        if (player == null)
+        if (modelRoot != null)
+            modelInitialLocalRot = modelRoot.localRotation;
+
+        ResolvePlayerRefs();
+
+        fixedY = rb.position.y;
+
+        lastFrontPointXZ = GetFrontPointXZ();
+        nextAttackTime = Time.time + Random.Range(0.2f, 0.6f);
+    }
+
+    void ResolvePlayerRefs()
+    {
+        if (playerTarget == null)
         {
-            var p = GameObject.FindGameObjectWithTag(playerTag);
-            if (p != null) player = p.transform;
+#if UNITY_2023_1_OR_NEWER
+            playerHealth = Object.FindAnyObjectByType<PlayerHealth>();
+#else
+            playerHealth = Object.FindObjectOfType<PlayerHealth>();
+#endif
+            if (playerHealth != null) playerTarget = playerHealth.transform;
+        }
+
+        if (playerTarget != null)
+        {
+            if (playerHealth == null)
+                playerHealth = playerTarget.GetComponent<PlayerHealth>()
+                            ?? playerTarget.GetComponentInParent<PlayerHealth>()
+                            ?? playerTarget.GetComponentInChildren<PlayerHealth>();
+
+            if (playerTargetCollider == null)
+                playerTargetCollider = playerTarget.GetComponent<Collider>()
+                                   ?? playerTarget.GetComponentInChildren<Collider>();
         }
     }
 
     void FixedUpdate()
     {
-        if (player == null)
+        if (playerTarget == null || playerHealth == null)
+        {
+            ResolvePlayerRefs();
+            if (playerTarget == null || playerHealth == null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                return;
+            }
+        }
+
+        // ✅高度锁定：避免被碰撞/误差慢慢压到地面
+        if (lockHeight)
+        {
+            Vector3 pos = rb.position;
+            if (!Mathf.Approximately(pos.y, fixedY))
+            {
+                pos.y = fixedY;
+                rb.position = pos;
+            }
+        }
+
+        if (modelRoot != null)
+            modelRoot.localRotation = modelInitialLocalRot;
+
+        Vector3 frontXZ = GetFrontPointXZ();
+        if ((frontXZ - lastFrontPointXZ).sqrMagnitude > repathDistance * repathDistance)
+        {
+            lastFrontPointXZ = frontXZ;
+            if (state == State.Wait) state = State.Approach;
+        }
+
+        switch (state)
+        {
+            case State.Approach: DoApproach(); break;
+            case State.Wait: DoWait(); break;
+            case State.Dash: DoDash(); break;
+            case State.Return: DoReturn(); break;
+        }
+    }
+
+    Vector3 GetForwardFlat()
+    {
+        Vector3 f = playerTarget.forward;
+        f.y = 0f;
+        if (f.sqrMagnitude < 0.0001f) f = Vector3.forward;
+        return f.normalized;
+    }
+
+    Vector3 GetFrontPoint()
+    {
+        Vector3 f = GetForwardFlat();
+        Vector3 p = playerTarget.position + f * frontDistance;
+
+        // ✅用固定高度，而不是 transform.position.y（会漂移）
+        float y = lockHeight ? fixedY : transform.position.y;
+        return new Vector3(p.x, y, p.z);
+    }
+
+    Vector3 GetFrontPointXZ()
+    {
+        Vector3 p = GetFrontPoint();
+        p.y = 0f;
+        return p;
+    }
+
+    void DoApproach()
+    {
+        Vector3 targetPos = GetFrontPoint();
+        Vector3 toTarget = targetPos - transform.position;
+        float dist = toTarget.magnitude;
+
+        FaceYaw(playerTarget.position - transform.position);
+
+        if (dist <= arriveTolerance)
         {
             rb.linearVelocity = Vector3.zero;
+            state = State.Wait;
             return;
         }
 
-        Vector3 target = player.position + Vector3.up * hoverHeightOffset;
-        Vector3 toTarget = target - transform.position;
-
-        float dist = toTarget.magnitude;
-        if (dist < 0.01f) return;
-
-        Vector3 dir = toTarget.normalized;
-
-        // 转向
-        Quaternion targetRot = Quaternion.LookRotation(dir);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.fixedDeltaTime);
-
-        // 前进（近距离减速避免抖动）
-        float speed = flySpeed;
-        if (dist < slowDownDistance) speed *= (dist / slowDownDistance);
-
-        rb.linearVelocity = transform.forward * speed;
+        rb.linearVelocity = (toTarget / Mathf.Max(0.001f, dist)) * flySpeed;
     }
 
-    void OnTriggerStay(Collider other)
+    void DoWait()
     {
-        if (!other.CompareTag(playerTag)) return;
-        if (Time.time < nextDamageTime) return;
+        rb.linearVelocity = Vector3.zero;
+        FaceYaw(playerTarget.position - transform.position);
 
-        PlayerHealth ph = other.GetComponent<PlayerHealth>() ?? other.GetComponentInParent<PlayerHealth>();
-        if (ph != null)
+        float distToFront = (GetFrontPoint() - transform.position).magnitude;
+        if (distToFront > arriveTolerance * 2f)
         {
-            ph.TakeDamage(damagePerHit);
-            nextDamageTime = Time.time + damageInterval;
+            state = State.Approach;
+            return;
         }
+
+        if (Time.time >= nextAttackTime)
+        {
+            state = State.Dash;
+            didDamageThisDash = false;
+            dashEndTime = Time.time + dashDuration;
+        }
+    }
+
+    void DoDash()
+    {
+        Vector3 toPlayer = playerTarget.position - transform.position;
+        Vector3 dir = toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : transform.forward;
+
+        FaceYaw(dir);
+        rb.linearVelocity = dir * dashSpeed;
+
+        if (!didDamageThisDash)
+        {
+            Vector3 batPos = transform.position;
+            Vector3 closest = playerTargetCollider != null ? playerTargetCollider.ClosestPoint(batPos) : playerTarget.position;
+
+            Vector3 d = closest - batPos;
+            d.y = 0f;
+
+            if (d.sqrMagnitude <= hitRadius * hitRadius)
+            {
+                playerHealth.TakeDamage(damagePerHit);
+                didDamageThisDash = true;
+            }
+        }
+
+        if (Time.time >= dashEndTime)
+        {
+            state = State.Return;
+        }
+    }
+
+    void DoReturn()
+    {
+        Vector3 targetPos = GetFrontPoint();
+        Vector3 toTarget = targetPos - transform.position;
+        float dist = toTarget.magnitude;
+
+        FaceYaw(playerTarget.position - transform.position);
+
+        if (dist <= arriveTolerance)
+        {
+            rb.linearVelocity = Vector3.zero;
+            nextAttackTime = Time.time + attackCooldown;
+            lastFrontPointXZ = GetFrontPointXZ();
+            state = State.Wait;
+            return;
+        }
+
+        rb.linearVelocity = (toTarget / Mathf.Max(0.001f, dist)) * returnSpeed;
+    }
+
+    void FaceYaw(Vector3 dir)
+    {
+        Vector3 flat = new Vector3(dir.x, 0f, dir.z);
+        if (flat.sqrMagnitude < 0.0001f) return;
+
+        Quaternion targetRot = Quaternion.LookRotation(flat.normalized, Vector3.up);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.fixedDeltaTime);
     }
 }

@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3849486869258853261}
   - component: {fileID: 5467531420593535215}
   - component: {fileID: 1082384576695643479}
+  - component: {fileID: 1009448722683482406}
   m_Layer: 8
   m_Name: Ghost
   m_TagString: Enemy
@@ -186,7 +187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f958f9bc52b2bf40a03d8a627aaac87, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 4
+  moveSpeed: 2
   rotationSpeed: 6
   ignoreVertical: 1
   searchInterval: 0.5
@@ -196,9 +197,26 @@ MonoBehaviour:
   handTransform: {fileID: 7367378259119566756}
   holdLocalPos: {x: 0, y: 0, z: 0}
   holdLocalEuler: {x: 0, y: 0, z: 0}
-  throwSpeed: 15
-  throwCooldown: 2
+  throwSpeed: 20
+  throwCooldown: 0.5
   debugLogs: 0
+--- !u!114 &1009448722683482406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1860038508164249249}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4e923a451f5a2544abf3eedfd15731b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damagePerHit: 20
+  damageInterval: 1
+  playerTag: Player
+  allowedTags:
+  - slime
 --- !u!1 &2085427084326432275
 GameObject:
   m_ObjectHideFlags: 0

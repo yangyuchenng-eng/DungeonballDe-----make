@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &1909948185490881347
+--- !u!1 &2935304104033891789
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,51 +8,83 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6207892905584641168}
-  - component: {fileID: 6945766715613242027}
-  - component: {fileID: 8138099605750260275}
-  - component: {fileID: 1246149307561299977}
-  - component: {fileID: 7635339015096981341}
-  - component: {fileID: -5114607891116675328}
-  - component: {fileID: 8516420235842294320}
-  - component: {fileID: 7511170514238525230}
-  m_Layer: 12
-  m_Name: Key
+  - component: {fileID: 4645750987320773954}
+  m_Layer: 8
+  m_Name: firepot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &6207892905584641168
+--- !u!4 &4645750987320773954
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909948185490881347}
+  m_GameObject: {fileID: 2935304104033891789}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.25, y: 0.67, z: 4.96}
-  m_LocalScale: {x: 0.1, y: 0.5, z: 0.1}
+  m_LocalPosition: {x: -0.947, y: -0.455, z: 0.066}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
+  m_Father: {fileID: 8796751351959841882}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7549025793873761650
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8796751351959841882}
+  - component: {fileID: 2558084696720692669}
+  - component: {fileID: 3251409819209113541}
+  - component: {fileID: 6893981811863468571}
+  - component: {fileID: 5749058553236045632}
+  - component: {fileID: 7430940314992971461}
+  - component: {fileID: 8582244461046993985}
+  - component: {fileID: 4288809829248399170}
+  m_Layer: 8
+  m_Name: firesprite
+  m_TagString: Enemy
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8796751351959841882
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7549025793873761650}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 16.113832, y: 1.0729789, z: 18.166597}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4645750987320773954}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &6945766715613242027
+--- !u!33 &2558084696720692669
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909948185490881347}
-  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &8138099605750260275
+  m_GameObject: {fileID: 7549025793873761650}
+  m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &3251409819209113541
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909948185490881347}
+  m_GameObject: {fileID: 7549025793873761650}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -69,7 +101,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e47459a8b797210479aed3c420ba6520, type: 2}
+  - {fileID: 2100000, guid: 4c611156328fe1a499be09601fafadba, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -91,13 +123,13 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!136 &1246149307561299977
+--- !u!136 &6893981811863468571
 CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909948185490881347}
+  m_GameObject: {fileID: 7549025793873761650}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -110,52 +142,72 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5000001
+  m_Radius: 0.5
   m_Height: 2
   m_Direction: 1
-  m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
---- !u!114 &7635339015096981341
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &5749058553236045632
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909948185490881347}
+  m_GameObject: {fileID: 7549025793873761650}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8119c9729befb043948f713c61f1abc, type: 3}
+  m_Script: {fileID: 11500000, guid: f4a0960de2486f249b8013015896acb8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  keyId: MainDoor
---- !u!114 &-5114607891116675328
+  player: {fileID: 0}
+  playerTag: Player
+  aimHeightOffset: 1
+  firePoint: {fileID: 4645750987320773954}
+  fireballPrefab: {fileID: 3570678021368661859, guid: a4d045a753db1844cbfe1668289469a4, type: 3}
+  shootInterval: 1
+  shootSpeed: 20
+  minShootDistance: 3
+  maxShootDistance: 30
+  fireballDamageToPlayer: 20
+--- !u!114 &7430940314992971461
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909948185490881347}
+  m_GameObject: {fileID: 7549025793873761650}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ead22ec251acc6f4081dfb103afa7a14, type: 3}
+  m_Script: {fileID: 11500000, guid: 0a7bcec28328f84489fcacfd68ad6f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Item
-  isPickupable: 1
-  holdable: 1
-  throwable: 1
-  dealsDamageWhenThrown: 1
-  damageAmount: 1
-  isKey: 1
-  keyID: 
-  isHeld: 0
-  wasThrownByPlayer: 0
---- !u!54 &8516420235842294320
+  maxHealth: 1
+  currentHealth: 0
+  destroyOnDeath: 1
+--- !u!114 &8582244461046993985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7549025793873761650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41e1e6dca035c004c8f0aa8f1c35383e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageFromPlayerBall: 999
+  requiredBallLayerName: Pickup
+  minHitSpeed: 2
+  clearThrownFlagWhenTooSlow: 1
+  requireDamagesEnemiesFlag: 1
+  debugLogs: 1
+--- !u!54 &4288809829248399170
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909948185490881347}
+  m_GameObject: {fileID: 7549025793873761650}
   serializedVersion: 4
   m_Mass: 1
   m_Drag: 0
@@ -171,31 +223,8 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 0
+  m_UseGravity: 1
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &7511170514238525230
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909948185490881347}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 503ff668e5be50f43ae15a582c3a7e37, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  hitLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  maxFlightTime: 5
-  keepColliderEnabledWhileFlying: 1
-  sphereCastRadiusMultiplier: 0.95
-  extraCastDistance: 0.02
-  hitNudge: 0.02
-  bounceSpeedMultiplier: 0.9
-  destroyFireballOnRaycastHit: 1
-  normalizeEnemyBallAfterHittingPlayer: 1
