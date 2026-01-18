@@ -98,7 +98,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1909948185490881347}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: fedb37dbf280ada4c801eb84a50e0f0c, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -157,9 +157,9 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1909948185490881347}
   serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
+  m_Mass: 100
+  m_Drag: 1.5
+  m_AngularDrag: 6
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -171,11 +171,11 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 0
+  m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
+  m_Constraints: 112
+  m_CollisionDetection: 2
 --- !u!114 &7511170514238525230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190,12 +190,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 320
   maxFlightTime: 5
   keepColliderEnabledWhileFlying: 1
-  sphereCastRadiusMultiplier: 0.95
+  sphereCastRadiusMultiplier: 0
   extraCastDistance: 0.02
-  hitNudge: 0.02
-  bounceSpeedMultiplier: 0.9
+  hitNudge: 0.1
+  bounceSpeedMultiplier: 0.2
   destroyFireballOnRaycastHit: 1
   normalizeEnemyBallAfterHittingPlayer: 1

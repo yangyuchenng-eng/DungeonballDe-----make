@@ -103,7 +103,7 @@ Rigidbody:
   serializedVersion: 4
   m_Mass: 1
   m_Drag: 0.2
-  m_AngularDrag: 10
+  m_AngularDrag: 1
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -183,7 +183,7 @@ MonoBehaviour:
   sphereCastRadiusMultiplier: 0.95
   extraCastDistance: 0.02
   hitNudge: 0.02
-  bounceSpeedMultiplier: 0.9
+  bounceSpeedMultiplier: 2
   destroyFireballOnRaycastHit: 1
   normalizeEnemyBallAfterHittingPlayer: 1
 --- !u!135 &2074934759806996775

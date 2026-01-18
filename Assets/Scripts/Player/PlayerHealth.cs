@@ -88,10 +88,18 @@ public class PlayerHealth : MonoBehaviour
             hands.enabled = false;
         }
 
-        var ui = FindFirstObjectByType<GameStateUI>();
-        if (ui != null)
+        // 替换 Die() 末尾这段
+        // 原来：var ui = FindFirstObjectByType<GameStateUI>(); ui.ShowDeath();
+        if (GameSystemsTMP.I != null)
         {
-            ui.ShowDeath();
+            GameSystemsTMP.I.ShowDeath();
         }
+        else
+        {
+            var ui = FindFirstObjectByType<GameStateUI>();
+            if (ui != null) ui.ShowDeath();
+        }
+
+
     }
 }

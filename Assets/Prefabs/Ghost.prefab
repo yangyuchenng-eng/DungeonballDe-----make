@@ -169,9 +169,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 3
   rotationSpeed: 6
-  ignoreVertical: 1
+  arriveDistance: 0.3
+  lockY: 1
   searchInterval: 0.5
-  pickupTrigger: {fileID: 0}
   pickupLayerName: Pickup
   pickedLayerName: Picked
   handTransform: {fileID: 7367378259119566756}
@@ -351,7 +351,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4e923a451f5a2544abf3eedfd15731b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damagePerHit: 10
+  damagePerHit: 15
   damageInterval: 0.5
   playerTag: Player
   allowedTags:
