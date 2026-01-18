@@ -44,10 +44,39 @@ public class BatEnemy : MonoBehaviour
 
     Vector3 lastFrontPointXZ;
 
-    // ✅关键：固定高度，防止越打越矮
+    // 固定高度
     float fixedY;
 
-    void Start()
+    // ✅ 新增：允许外部（SpawnPoint）覆盖出生高度
+    bool heightOverridden = false;
+    float overriddenY = 0f;
+
+    /// <summary>
+    /// ✅ 由 SpawnPoint 调用：告诉蝙蝠应该锁在哪个高度出生
+    /// </summary>
+    public void SetSpawnHeight(float y)
+    {
+        heightOverridden = true;
+        overriddenY = y;
+        fixedY = y;
+
+        // 如果刚体已初始化，立刻把位置抬到该高度
+        if (rb != null)
+        {
+            Vector3 pos = rb.position;
+            pos.y = fixedY;
+            rb.position = pos;
+        }
+        else
+        {
+            // rb 还没 Awake 也没关系：Start 时会用 overriddenY
+            Vector3 pos = transform.position;
+            pos.y = fixedY;
+            transform.position = pos;
+        }
+    }
+
+    void Awake()
     {
         rb = GetComponent<Rigidbody>();
         rb.useGravity = false;
@@ -57,7 +86,23 @@ public class BatEnemy : MonoBehaviour
 
         ResolvePlayerRefs();
 
-        fixedY = rb.position.y;
+        // ✅ 如果外部已经指定高度，就先用它把位置对齐
+        if (heightOverridden)
+        {
+            Vector3 pos = rb.position;
+            pos.y = overriddenY;
+            rb.position = pos;
+            fixedY = overriddenY;
+        }
+    }
+
+    void Start()
+    {
+        // ✅ 如果外部没指定，才用“出生时的 y”
+        if (!heightOverridden)
+        {
+            fixedY = rb.position.y;
+        }
 
         lastFrontPointXZ = GetFrontPointXZ();
         nextAttackTime = Time.time + Random.Range(0.2f, 0.6f);
@@ -100,7 +145,7 @@ public class BatEnemy : MonoBehaviour
             }
         }
 
-        // ✅高度锁定：避免被碰撞/误差慢慢压到地面
+        // ✅高度锁定
         if (lockHeight)
         {
             Vector3 pos = rb.position;
@@ -143,7 +188,6 @@ public class BatEnemy : MonoBehaviour
         Vector3 f = GetForwardFlat();
         Vector3 p = playerTarget.position + f * frontDistance;
 
-        // ✅用固定高度，而不是 transform.position.y（会漂移）
         float y = lockHeight ? fixedY : transform.position.y;
         return new Vector3(p.x, y, p.z);
     }

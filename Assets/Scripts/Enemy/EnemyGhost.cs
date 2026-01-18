@@ -1,24 +1,23 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
 public class EnemyGhost : MonoBehaviour
 {
-    [Header("Movement")]
+    [Header("Movement (Transform)")]
     public float moveSpeed = 4f;
-    public float rotationSpeed = 8f;
-    public bool ignoreVertical = true;
+    public float rotationSpeed = 10f;
+    public float arriveDistance = 0.3f;
+
+    [Tooltip("锁定出生时的 Y，只在 XZ 平移")]
+    public bool lockY = true;
 
     [Header("Search")]
     public float searchInterval = 0.5f;
 
-    [Header("Pickup Trigger")]
-    [Tooltip("放一个 SphereCollider(Trigger) 在这个物体或子物体上，用来检测球")]
-    public Collider pickupTrigger;
-
-    [Tooltip("只捡 Pickup layer 的球（推荐）")]
+    [Header("Pickup")]
+    [Tooltip("幽灵只捡这个 layer 的球（Key 不在这个 layer 就不会捡）")]
     public string pickupLayerName = "Pickup";
 
-    [Tooltip("拿在手里时改成这个 layer（并在矩阵里关闭 Picked<->Enemy 碰撞）")]
+    [Tooltip("拿在手里时改成这个 layer（可选）")]
     public string pickedLayerName = "Picked";
 
     [Header("Hand / Holding")]
@@ -33,7 +32,6 @@ public class EnemyGhost : MonoBehaviour
     [Header("Debug")]
     public bool debugLogs = false;
 
-    private Rigidbody rb;
     private Transform player;
 
     private PickupItem targetBall;
@@ -42,26 +40,21 @@ public class EnemyGhost : MonoBehaviour
     private float nextSearchTime = 0f;
     private float lastThrowTime = -999f;
 
+    private float fixedY;
+
     void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        if (handTransform == null) handTransform = transform;
+        fixedY = transform.position.y;
     }
 
     void Start()
     {
-        rb.useGravity = false;
-        rb.freezeRotation = true;
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-
-        if (handTransform == null) handTransform = transform;
-
-        if (pickupTrigger == null)
-            Debug.LogWarning("[EnemyGhost] pickupTrigger 没设置！请拖一个 SphereCollider(Trigger) 进来。", this);
-
         FindPlayer();
+        fixedY = transform.position.y;
     }
 
-    void FixedUpdate()
+    void Update()
     {
         if (player == null)
         {
@@ -69,56 +62,66 @@ public class EnemyGhost : MonoBehaviour
             return;
         }
 
+        // 没球：定期找最近的可捡球
         if (heldBall == null && Time.time >= nextSearchTime)
         {
             targetBall = FindNearestPickupBall();
             nextSearchTime = Time.time + searchInterval;
 
             if (debugLogs)
-                Debug.Log($"[EnemyGhost] Search targetBall = {(targetBall ? targetBall.name : "null")}", this);
+                Debug.Log($"[EnemyGhost] targetBall = {(targetBall ? targetBall.name : "null")}", this);
         }
 
-        if (heldBall == null)
-        {
-            if (targetBall != null && !targetBall.isHeld)
-                MoveTowards(targetBall.transform.position);
-            else
-                MoveTowards(player.position);
-        }
-        else
+        // 有球：追玩家 + 冷却到就扔
+        if (heldBall != null)
         {
             MoveTowards(player.position);
 
             if (Time.time - lastThrowTime >= throwCooldown)
                 ThrowHeldBall();
+
+            return;
         }
+
+        // 没球：优先追球，否则追玩家
+        if (targetBall != null && !targetBall.isHeld)
+            MoveTowards(targetBall.transform.position);
+        else
+            MoveTowards(player.position);
     }
 
     void FindPlayer()
     {
         var p = GameObject.FindGameObjectWithTag("Player");
         player = p ? p.transform : null;
-
-        if (debugLogs && player == null)
-            Debug.LogWarning("[EnemyGhost] 找不到 Tag=Player 的对象！", this);
     }
 
     void MoveTowards(Vector3 targetPos)
     {
-        Vector3 to = targetPos - transform.position;
-        if (ignoreVertical) to.y = 0f;
-        if (to.sqrMagnitude < 0.0001f)
+        Vector3 pos = transform.position;
+
+        Vector3 to = targetPos - pos;
+        to.y = 0f;
+
+        float dist = to.magnitude;
+        if (dist <= arriveDistance) return;
+
+        Vector3 dir = to / Mathf.Max(0.001f, dist);
+
+        // 旋转朝向（只转 Y）
+        if (dir.sqrMagnitude > 0.0001f)
         {
-            rb.linearVelocity = Vector3.zero;
-            return;
+            Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
         }
 
-        Vector3 dir = to.normalized;
-        rb.linearVelocity = dir * moveSpeed;
+        // 纯平移（按你要求：不做任何防穿墙处理）
+        Vector3 move = dir * moveSpeed * Time.deltaTime;
+        Vector3 next = pos + move;
 
-        Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
-        Quaternion newRot = Quaternion.Slerp(rb.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime);
-        rb.MoveRotation(newRot);
+        if (lockY) next.y = fixedY;
+
+        transform.position = next;
     }
 
     PickupItem FindNearestPickupBall()
@@ -148,7 +151,8 @@ public class EnemyGhost : MonoBehaviour
         return best;
     }
 
-    // ✅ 一碰到球就捡：用 Trigger 检测
+    // 捡球触发：你可以把这个脚本挂在“Trigger 子物体”上，
+    // 或者把 Trigger 子物体的 Collider 设成 IsTrigger 并确保它能触发到这里
     void OnTriggerEnter(Collider other)
     {
         if (heldBall != null) return;
@@ -191,7 +195,6 @@ public class EnemyGhost : MonoBehaviour
             bd.damagesEnemies = false;
         }
 
-        // 放到手上
         ball.transform.SetParent(handTransform);
         ball.transform.localPosition = holdLocalPos;
         ball.transform.localRotation = Quaternion.Euler(holdLocalEuler);
@@ -213,7 +216,6 @@ public class EnemyGhost : MonoBehaviour
         int pickupLayer = LayerMask.NameToLayer(pickupLayerName);
         if (pickupLayer != -1) ball.gameObject.layer = pickupLayer;
 
-        // 扔出去恢复物理
         Rigidbody brb = ball.GetComponent<Rigidbody>();
         if (brb != null)
         {
@@ -221,7 +223,6 @@ public class EnemyGhost : MonoBehaviour
             brb.useGravity = true;
         }
 
-        // 敌人扔球：标记伤害玩家
         BallDamage bd = ball.GetComponent<BallDamage>();
         if (bd != null)
         {
@@ -230,7 +231,9 @@ public class EnemyGhost : MonoBehaviour
             bd.damagesEnemies = false;
         }
 
-        Vector3 dir = (player.position - ball.transform.position).normalized;
+        Vector3 dir = (player.position - ball.transform.position);
+        dir.y = 0f;
+        dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : transform.forward;
 
         ThrowableBall tb = ball.GetComponent<ThrowableBall>();
         if (tb != null)
@@ -241,5 +244,41 @@ public class EnemyGhost : MonoBehaviour
         lastThrowTime = Time.time;
 
         if (debugLogs) Debug.Log("[EnemyGhost] Threw ball", this);
+    }
+
+    // 幽灵死了，球别跟着一起没了
+    void OnDisable() => DropHeldBallIfAny();
+    void OnDestroy() => DropHeldBallIfAny();
+
+    private void DropHeldBallIfAny()
+    {
+        if (heldBall == null) return;
+
+        PickupItem ball = heldBall;
+        heldBall = null;
+
+        ball.transform.SetParent(null, true);
+        ball.isHeld = false;
+        ball.wasThrownByPlayer = false;
+
+        int pickupLayer = LayerMask.NameToLayer(pickupLayerName);
+        if (pickupLayer != -1) ball.gameObject.layer = pickupLayer;
+
+        Rigidbody brb = ball.GetComponent<Rigidbody>();
+        if (brb != null)
+        {
+            brb.isKinematic = false;
+            brb.useGravity = true;
+            brb.linearVelocity = Vector3.zero;
+            brb.angularVelocity = Vector3.zero;
+        }
+
+        BallDamage bd = ball.GetComponent<BallDamage>();
+        if (bd != null)
+        {
+            bd.isEnemyProjectile = false;
+            bd.damagesPlayer = false;
+            bd.damagesEnemies = true;
+        }
     }
 }

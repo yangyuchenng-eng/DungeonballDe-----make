@@ -221,10 +221,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   floorLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   wallLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   wallBounceMultiplier: 0.9
   wallVerticalKeep: 0.3
   floorHorizontalDamping: 0.6
