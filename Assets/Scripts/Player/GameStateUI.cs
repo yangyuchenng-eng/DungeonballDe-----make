@@ -2,12 +2,12 @@
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// AI-assisted: manages win/lose UI, pausing, and restart.
+
 public class GameStateUI : MonoBehaviour
 {
     [Header("Panels")]
-    public GameObject deathPanel;   // “你死了”
-    public GameObject winPanel;     // “你赢了”
+    public GameObject deathPanel;   
+    public GameObject winPanel;     
 
     private bool gameEnded = false;
 
@@ -23,7 +23,7 @@ public class GameStateUI : MonoBehaviour
     {
         if (!gameEnded) return;
 
-        // 游戏结束后按 R 重新开始当前场景
+       
         if (Input.GetKeyDown(KeyCode.R))
         {
             Time.timeScale = 1f;

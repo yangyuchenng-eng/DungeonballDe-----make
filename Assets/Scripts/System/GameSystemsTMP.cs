@@ -24,7 +24,7 @@ public class GameSystemsTMP : MonoBehaviour
     public string returnMenuButtonName = "Button_ReturnMenu";
     public string sensitivityButtonName = "Button_Sensitivity";
     public string soundButtonName = "Button_Sound";
-    public string buttonLabelTMPName = "Text (TMP)"; // Unity 默认按钮文字名字
+    public string buttonLabelTMPName = "Text (TMP)"; 
 
     [Header("Disable SRP Debug Updater (fix stutter)")]
     public bool disableDebugUpdater = true;
@@ -59,14 +59,14 @@ public class GameSystemsTMP : MonoBehaviour
     [Header("Sensitivity (3 levels)")]
     public float[] sensitivityLevels = new float[] { 1.5f, 2.5f, 4.0f };
 
-    // ---- runtime ----
+    
     float startUnscaled;
     float endUnscaled;
     bool runStarted = false;
     bool runEnded = false;
     bool paused = false;
 
-    // cached player scripts (for disable/enable)
+   
     SimpleFPSMovement cachedMove;
     PlayerHands cachedHands;
     AimCrosshair cachedCrosshair;
@@ -102,7 +102,7 @@ public class GameSystemsTMP : MonoBehaviour
         AutoBindGlobalUI();
         BindAllButtonsOnce();
 
-        // ✅ 新增：菜单按钮也自动绑定一次（不依赖 MenuUIBinder）
+        
         TryBindMenuButtonsAndTexts();
 
         HideAllPanels();
@@ -130,7 +130,7 @@ public class GameSystemsTMP : MonoBehaviour
         }
     }
 
-    // ----------------- Public API (给按钮用) -----------------
+   
 
     public void StartGame()
     {
@@ -148,7 +148,7 @@ public class GameSystemsTMP : MonoBehaviour
         SceneManager.LoadScene(level1Scene);
     }
 
-    // 菜单场景用：如果你还在用 MenuUIBinder，这个接口仍然保留
+    
     public void BindMenuTexts(TMP_Text sens, TMP_Text sound)
     {
         menuSensitivityText = sens;
@@ -231,7 +231,7 @@ public class GameSystemsTMP : MonoBehaviour
         if (deathTimeText) deathTimeText.text = FormatElapsed(GetElapsedSeconds());
     }
 
-    // ----------------- Pause -----------------
+   
 
     void TogglePause()
     {
@@ -261,7 +261,7 @@ public class GameSystemsTMP : MonoBehaviour
         }
     }
 
-    // ----------------- Scene Loaded -----------------
+    
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -270,7 +270,7 @@ public class GameSystemsTMP : MonoBehaviour
         AutoBindGlobalUI();
         BindAllButtonsOnce();
 
-        // ✅ 新增：每次进菜单都尝试自动绑定菜单按钮 + 文本
+        
         if (scene.name == menuScene)
         {
             TryBindMenuButtonsAndTexts();
@@ -294,7 +294,7 @@ public class GameSystemsTMP : MonoBehaviour
         }
     }
 
-    // ----------------- Auto Bind Global UI (NO SCAN) -----------------
+   
 
     void AutoBindGlobalUI()
     {
@@ -367,11 +367,11 @@ public class GameSystemsTMP : MonoBehaviour
         }
     }
 
-    // ----------------- ✅ 新增：自动绑定菜单按钮（解决你现在“点了没反应”） -----------------
+  
 
     void TryBindMenuButtonsAndTexts()
     {
-        // 找菜单里的两个按钮（按名字）
+      
         Button menuSensBtn = FindSceneButtonByName(sensitivityButtonName);
         Button menuSoundBtn = FindSceneButtonByName(soundButtonName);
 
@@ -380,7 +380,7 @@ public class GameSystemsTMP : MonoBehaviour
             menuSensBtn.onClick.RemoveListener(CycleSensitivity);
             menuSensBtn.onClick.AddListener(CycleSensitivity);
 
-            // 自动抓按钮文字
+           
             TMP_Text label = menuSensBtn.transform.Find(buttonLabelTMPName)?.GetComponent<TMP_Text>();
             if (label != null) menuSensitivityText = label;
         }
@@ -399,7 +399,7 @@ public class GameSystemsTMP : MonoBehaviour
 
     Button FindSceneButtonByName(string goName)
     {
-        // 先排除 Global Canvas（避免找到 PausePanel 的按钮）
+       
         Transform globalCanvas = transform.Find(globalCanvasName);
 
         GameObject go = GameObject.Find(goName);
@@ -407,15 +407,14 @@ public class GameSystemsTMP : MonoBehaviour
 
         if (globalCanvas != null && go.transform.IsChildOf(globalCanvas))
         {
-            // 如果找到的是 Global Canvas 里的同名对象，就返回 null，让别的方式处理
+           
             return null;
         }
 
         return go.GetComponent<Button>();
     }
 
-    // ----------------- Button Binding -----------------
-
+    
     void BindAllButtonsOnce()
     {
         if (winReturnMenuButton != null)
@@ -456,7 +455,7 @@ public class GameSystemsTMP : MonoBehaviour
         }
     }
 
-    // ----------------- Player input enable/disable -----------------
+   
 
     void CachePlayerScripts()
     {
@@ -481,7 +480,7 @@ public class GameSystemsTMP : MonoBehaviour
         if (cachedCrosshair != null) cachedCrosshair.enabled = true;
     }
 
-    // ----------------- Settings apply -----------------
+    
 
     void ApplySensitivityToPlayer()
     {
@@ -517,7 +516,7 @@ public class GameSystemsTMP : MonoBehaviour
         if (pauseSoundText) pauseSoundText.text = soundStr;
     }
 
-    // ----------------- Timer -----------------
+    
 
     float GetElapsedSeconds()
     {
@@ -559,7 +558,7 @@ public class GameSystemsTMP : MonoBehaviour
         ReturnMenu();
     }
 
-    // ----------------- Fix Stutter: Disable Debug Updater -----------------
+   
 
     void TryDisableDebugUpdater()
     {

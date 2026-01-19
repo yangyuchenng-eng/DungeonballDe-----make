@@ -55,7 +55,7 @@ public class ThrowableBall : MonoBehaviour
         if (keepColliderEnabledWhileFlying)
         {
             col.enabled = true;
-            col.isTrigger = true; // 飞行阶段不产生物理弹跳，但能被抓取/触发检测到
+            col.isTrigger = true; 
         }
         else
         {
@@ -102,13 +102,13 @@ public class ThrowableBall : MonoBehaviour
                     mask,
                     QueryTriggerInteraction.Collide))
             {
-                // 先把球放到命中点附近，避免卡进 collider
+                
                 transform.position = hit.point + hit.normal * hitNudge;
 
-                // ✅ 伤害：敌人/玩家都在这里结算
+                
                 ApplyDamage(hit.collider);
 
-                // 火球：命中就销毁（不依赖 OnCollision）
+                
                 if (destroyFireballOnRaycastHit && CompareTag("fireball"))
                 {
                     Destroy(gameObject);
@@ -129,7 +129,7 @@ public class ThrowableBall : MonoBehaviour
 
     float GetCastRadius()
     {
-        // 最稳：用 bounds 的最小半径（适配任意 collider）
+        
         Bounds b = col.bounds;
         return Mathf.Min(b.extents.x, b.extents.y, b.extents.z);
     }
@@ -138,10 +138,10 @@ public class ThrowableBall : MonoBehaviour
     {
         if (other == null) return;
 
-        // 手里拿着不结算
+        
         if (pickupItem != null && pickupItem.isHeld) return;
 
-        // ---------- 命中敌人：完全沿用你“原始方法” ----------
+        
         EnemyHealth eh = other.GetComponentInParent<EnemyHealth>();
         if (eh != null)
         {
@@ -151,15 +151,15 @@ public class ThrowableBall : MonoBehaviour
 
             eh.TakeDamage(pickupItem.damageAmount);
 
-            // ✅ 敌人受击音效（只在真正造成伤害时播）
+            
             AudioManager.I?.PlayEnemyHit();
 
-            // 防止同一次飞行反复结算
+           
             pickupItem.wasThrownByPlayer = false;
             return;
         }
 
-        // ---------- 命中玩家：敌人球/火球用 BallDamage ----------
+        
         PlayerHealth ph = other.GetComponentInParent<PlayerHealth>();
         if (ph != null)
         {
@@ -169,7 +169,7 @@ public class ThrowableBall : MonoBehaviour
             int dmg = Mathf.Max(0, Mathf.RoundToInt(ballDamage.damageToPlayer));
             ph.TakeDamage(dmg);
 
-            // 防止连续多次触发
+          
             ballDamage.damagesPlayer = false;
 
             if (normalizeEnemyBallAfterHittingPlayer)

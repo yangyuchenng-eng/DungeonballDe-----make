@@ -1,8 +1,6 @@
 using UnityEngine;
 
-// IMPROVED: 升级为现代FPS控制模式
-// - 鼠标控制视角方向（水平旋转玩家，垂直旋转摄像机）
-// - WASD 移动（W/S 前后，A/D 左右平移）
+
 [RequireComponent(typeof(CharacterController))]
 public class SimpleFPSMovement : MonoBehaviour
 {
@@ -14,8 +12,8 @@ public class SimpleFPSMovement : MonoBehaviour
 
     [Header("Mouse Look")]
     public float mouseSensitivity = 2f;
-    public float maxLookUp = 20f;      // 向上看的最大角度
-    public float maxLookDown = 30f;    // 向下看的最大角度
+    public float maxLookUp = 20f;      
+    public float maxLookDown = 30f;   
 
     [Header("Bullet Time")]
     [Tooltip("子弹时间(Time.timeScale < 1)时，视角速度也跟着变慢")]
@@ -55,7 +53,7 @@ public class SimpleFPSMovement : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // ✅ 子弹时间时也慢下来
+        
         if (scaleLookWithTimeScale)
         {
             float s = Mathf.Clamp(Time.timeScale, 0f, 1f);

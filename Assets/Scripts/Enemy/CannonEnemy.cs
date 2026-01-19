@@ -9,8 +9,7 @@ public class CannonEnemy : MonoBehaviour
 
     [Header("Shoot")]
     public Transform muzzle;
-    public GameObject cannonballPrefab;    // “炮弹 prefab”（建议带 ThrowableBall + BallDamage + PickupItem）
-    public float shootInterval = 2.2f;
+    public GameObject cannonballPrefab;    
     public float shootSpeed = 22f;
     public float minShootDistance = 5f;
     public float maxShootDistance = 45f;
@@ -19,7 +18,7 @@ public class CannonEnemy : MonoBehaviour
     public float cannonDamageToPlayer = 60f;
 
     [Header("Uncatchable (recommended)")]
-    public bool forceUncatchable = true; // 强制不可接
+    public bool forceUncatchable = true; 
 
     private float nextShootTime;
 
@@ -57,7 +56,7 @@ public class CannonEnemy : MonoBehaviour
 
         GameObject go = Instantiate(cannonballPrefab, muzzle.position, Quaternion.LookRotation(dir));
 
-        // ✅ 更高伤害
+        
         BallDamage bd = go.GetComponent<BallDamage>();
         if (bd != null)
         {
@@ -67,13 +66,13 @@ public class CannonEnemy : MonoBehaviour
             bd.damageToPlayer = cannonDamageToPlayer;
         }
 
-        // ✅ 不可被接住（核心）
+        
         if (forceUncatchable)
         {
             PickupItem pi = go.GetComponent<PickupItem>();
             if (pi != null)
             {
-                pi.isPickupable = false; // 你的 PlayerHands 抓取会跳过
+                pi.isPickupable = false; 
                 pi.isHeld = false;
                 pi.wasThrownByPlayer = false;
             }

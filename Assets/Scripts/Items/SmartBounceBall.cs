@@ -1,9 +1,6 @@
 ﻿using UnityEngine;
 
-// AI-assisted script for custom bounce behaviour:
-// - 撞 "墙"（wallLayers）：强烈反弹，适合在墙角来回横弹
-// - 撞 "地"（floorLayers）：不再往上弹，只保留一点水平速度
-// - 其他碰撞体：用法线判定，大概归类成地/墙
+
 [RequireComponent(typeof(Rigidbody), typeof(Collider))]
 public class SmartBounceBall : MonoBehaviour
 {
@@ -40,9 +37,7 @@ public class SmartBounceBall : MonoBehaviour
         if (rb == null) return;
 
         Vector3 v = rb.linearVelocity;
-        if (v.sqrMagnitude < 0.0001f) return; // 已经很慢就不处理
-
-        // ✅ 弹球音效：发生有效碰撞时播（用速度做一个简单音量系数）
+        if (v.sqrMagnitude < 0.0001f) return; 
         float volMul = Mathf.Clamp01(v.magnitude / 20f);
         if (volMul > 0.05f)
             AudioManager.I?.PlayBounce(volMul);
@@ -50,14 +45,14 @@ public class SmartBounceBall : MonoBehaviour
         GameObject other = collision.gameObject;
         int otherLayer = other.layer;
 
-        // 1️⃣ 先用 Layer 判断：floorLayers 优先
+       
         if (IsInLayerMask(otherLayer, floorLayers))
         {
             HandleFloorHit(v);
             return;
         }
 
-        // 2️⃣ 再看 wallLayers
+        
         if (IsInLayerMask(otherLayer, wallLayers))
         {
             Vector3 normal = GetAverageNormal(collision);
@@ -65,13 +60,13 @@ public class SmartBounceBall : MonoBehaviour
             return;
         }
 
-        // 3️⃣ 都不是，再用法线兜底（比如有些斜坡、柱子等）
+       
         Vector3 avgNormal = GetAverageNormal(collision);
         if (avgNormal == Vector3.zero) return;
 
         float upDot = Vector3.Dot(avgNormal, Vector3.up);
 
-        // 法线比较朝上 ≈ 地面
+        
         if (upDot > 0.7f)
         {
             HandleFloorHit(v);
@@ -84,7 +79,7 @@ public class SmartBounceBall : MonoBehaviour
 
     bool IsInLayerMask(int layer, LayerMask mask)
     {
-        if (mask.value == 0) return false; // 没设置任何层
+        if (mask.value == 0) return false;
         return (mask.value & (1 << layer)) != 0;
     }
 
@@ -109,7 +104,7 @@ public class SmartBounceBall : MonoBehaviour
 
     void HandleFloorHit(Vector3 v)
     {
-        // 不再往上弹：竖直分量清零
+       
         Vector3 horizontal = new Vector3(v.x, 0f, v.z) * floorHorizontalDamping;
         float speed = horizontal.magnitude;
 
@@ -127,18 +122,18 @@ public class SmartBounceBall : MonoBehaviour
     {
         if (normal == Vector3.zero)
         {
-            // 没拿到正常法线就直接略减速
+           
             rb.linearVelocity = v * wallBounceMultiplier;
             return;
         }
 
-        // 反射向量：像子弹一样从墙上弹回去
+        
         Vector3 reflected = Vector3.Reflect(v, normal);
 
-        // 控制弹性程度
+        
         reflected *= wallBounceMultiplier;
 
-        // 压低竖直分量：更多是横向乱弹，不是弹到天花板
+       
         reflected.y = reflected.y * wallVerticalKeep;
 
         rb.linearVelocity = reflected;

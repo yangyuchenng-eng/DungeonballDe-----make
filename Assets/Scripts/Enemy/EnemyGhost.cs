@@ -63,7 +63,7 @@ public class EnemyGhost : MonoBehaviour
             return;
         }
 
-        // 没拿球：按间隔在范围内找球
+       
         if (heldBall == null && Time.time >= nextSearchTime)
         {
             targetBall = FindNearestPickupBallInRange();
@@ -73,7 +73,7 @@ public class EnemyGhost : MonoBehaviour
                 Debug.Log($"[EnemyGhost] targetBall(inRange) = {(targetBall ? targetBall.name : "null")}", this);
         }
 
-        // 如果目标球在范围内并且已经足够近，则直接捡起来（不依赖 OnTrigger）
+      
         if (heldBall == null && targetBall != null && !targetBall.isHeld)
         {
             float pickDist = GetPickupDistance();
@@ -84,7 +84,7 @@ public class EnemyGhost : MonoBehaviour
             }
         }
 
-        // 有球：追玩家 + 到点就扔
+        
         if (heldBall != null)
         {
             MoveTowards(player.position);
@@ -95,7 +95,7 @@ public class EnemyGhost : MonoBehaviour
             return;
         }
 
-        // 没球：有目标球就追球，否则追玩家
+      
         if (targetBall != null && !targetBall.isHeld)
             MoveTowards(targetBall.transform.position);
         else
@@ -133,7 +133,7 @@ public class EnemyGhost : MonoBehaviour
         transform.position = next;
     }
 
-    // ---------------- Range-based ball query ----------------
+
 
     Vector3 GetPickupRangeCenter()
     {
@@ -144,7 +144,6 @@ public class EnemyGhost : MonoBehaviour
     float GetPickupRangeRadius()
     {
         if (pickupRange == null) return 0f;
-        // SphereCollider 半径受 transform scale 影响，这里取最大缩放轴作为近似
         Vector3 lossy = pickupRange.transform.lossyScale;
         float scale = Mathf.Max(lossy.x, lossy.y, lossy.z);
         return pickupRange.radius * scale;
@@ -155,7 +154,7 @@ public class EnemyGhost : MonoBehaviour
         if (pickupDistance > 0f) return pickupDistance;
 
         float r = GetPickupRangeRadius();
-        if (r <= 0f) return 1.5f; // 没设置范围时的兜底
+        if (r <= 0f) return 1.5f; 
         return r * 0.6f;
     }
 
@@ -166,13 +165,13 @@ public class EnemyGhost : MonoBehaviour
         float rangeR = GetPickupRangeRadius();
         if (rangeR <= 0.0001f)
         {
-            // 没拖 pickupRange 就退回原逻辑（但会跨图找球），建议必须设置
+            
             return FindNearestPickupBall_FallbackGlobal(pickupLayer);
         }
 
         Vector3 center = GetPickupRangeCenter();
 
-        // ✅ 只在范围球里找碰撞体（性能更好，也不会跨地图）
+       
         Collider[] hits = Physics.OverlapSphere(center, rangeR, ~0, QueryTriggerInteraction.Collide);
 
         PickupItem best = null;
@@ -202,7 +201,7 @@ public class EnemyGhost : MonoBehaviour
         return best;
     }
 
-    // 如果你忘了拖 pickupRange，这个兜底会回到全局找（不推荐，但至少不会空指针）
+  
     PickupItem FindNearestPickupBall_FallbackGlobal(int pickupLayer)
     {
         PickupItem[] all = FindObjectsByType<PickupItem>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
@@ -230,7 +229,7 @@ public class EnemyGhost : MonoBehaviour
         return best;
     }
 
-    // ---------------- Pickup / Throw (原逻辑保持) ----------------
+    
 
     void PickupBall(PickupItem ball)
     {

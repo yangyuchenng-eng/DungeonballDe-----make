@@ -9,8 +9,7 @@ public class LevelBreaker : MonoBehaviour
 
     [Header("Layer Filter")]
     public string allowedLayerA = "Pickup";
-    public string allowedLayerB = "Key"; // 玩家也可能用钥匙砸碎（你想禁止就删掉 Key）
-
+    public string allowedLayerB = "Key"; 
     [Header("VFX Optional")]
     public GameObject breakVfxPrefab;
 
@@ -34,7 +33,7 @@ public class LevelBreaker : MonoBehaviour
         var item = other.GetComponentInParent<PickupItem>();
         if (item == null) return;
 
-        // layer 过滤
+       
         int l = item.gameObject.layer;
         bool okLayer = (layerA == -1 || l == layerA) || (layerB != -1 && l == layerB);
         if (!okLayer) return;
@@ -43,7 +42,7 @@ public class LevelBreaker : MonoBehaviour
 
         hp--;
 
-        // ✅ 目标物/关卡触发器受击音效（有效命中时播）
+        
         AudioManager.I?.PlayObjectiveHit();
 
         if (hp <= 0)
@@ -57,7 +56,7 @@ public class LevelBreaker : MonoBehaviour
             Destroy(gameObject);
         }
 
-        // 防止一个投掷物连续触发多个碎片（可选）
+       
         item.wasThrownByPlayer = false;
     }
 }

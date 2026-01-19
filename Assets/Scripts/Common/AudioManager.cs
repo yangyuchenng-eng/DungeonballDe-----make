@@ -5,9 +5,8 @@ public class AudioManager : MonoBehaviour
     public static AudioManager I { get; private set; }
 
     [Header("Sources")]
-    public AudioSource sfxSource;   // 2D, PlayOnAwake OFF
-    public AudioSource musicSource; // 2D, Loop ON
-
+    public AudioSource sfxSource;   
+    public AudioSource musicSource; 
     [Header("Clips")]
     public AudioClip sfxEnemyHit;
     public AudioClip sfxPlayerHit;
@@ -29,7 +28,7 @@ public class AudioManager : MonoBehaviour
 
     void Awake()
     {
-        // ✅ 关键：如果它是子物体，先把它变成 Root，再 DontDestroyOnLoad（否则会警告且不生效）
+        
         if (transform.parent != null)
             transform.SetParent(null, true);
 
@@ -55,7 +54,6 @@ public class AudioManager : MonoBehaviour
             musicSource.spatialBlend = 0f;
             musicSource.volume = musicVolume;
 
-            // ✅ 确保 BGM 进来就能播
             EnsureBgmPlaying();
         }
     }
@@ -81,7 +79,7 @@ public class AudioManager : MonoBehaviour
     {
         if (musicSource != null) musicSource.mute = !enabled;
 
-        // ✅ 如果重新打开音乐，保证它在播放
+        
         if (enabled) EnsureBgmPlaying();
     }
 
@@ -89,7 +87,7 @@ public class AudioManager : MonoBehaviour
     {
         if (clip == null || sfxSource == null) return;
 
-        // 防止同一帧/极短时间内刷爆（例如弹球连撞）
+        
         if (Time.unscaledTime - lastSfxTime < minSfxInterval) return;
         lastSfxTime = Time.unscaledTime;
 

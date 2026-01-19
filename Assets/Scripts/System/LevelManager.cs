@@ -4,7 +4,7 @@ using UnityEngine;
 public class LevelManager : MonoBehaviour
 {
     [Header("Scene Flow")]
-    public string nextSceneName; // Level_02 / Level_03 / WinScene
+    public string nextSceneName; 
 
     [Header("Final Room")]
     public RoomEncounter finalRoomEncounter;
@@ -25,7 +25,7 @@ public class LevelManager : MonoBehaviour
     {
         if (finalRoomEncounter == null)
         {
-            // 允许你不拖，自动找一个 isFinalRoom 的
+            
             var rooms = FindObjectsByType<RoomEncounter>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             foreach (var r in rooms)
                 if (r != null && r.isFinalRoom) { finalRoomEncounter = r; break; }
@@ -60,7 +60,7 @@ public class LevelManager : MonoBehaviour
     public void NotifyBreakerDestroyed(LevelBreaker breaker)
     {
         destroyedBreakers++;
-        // Debug.Log($"[LevelManager] Breakers: {destroyedBreakers}/{totalBreakers}");
+        
     }
 
     void SpawnOrEnablePortal()

@@ -2,8 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-// AI-assisted: player health with smooth UI and death handling.
-// IMPROVED: 在 Die() 方法中禁用玩家的输入脚本，防止死亡后还能操控
+
 public class PlayerHealth : MonoBehaviour
 {
     [Header("Health")]
@@ -48,7 +47,7 @@ public class PlayerHealth : MonoBehaviour
             healthSlider.value = 1f;
         }
 
-        // 初始化屏幕闪烁为透明
+        
         if (screenFlashImage != null)
         {
             var c = screenFlashImage.color;
@@ -60,7 +59,7 @@ public class PlayerHealth : MonoBehaviour
 
     void Update()
     {
-        // 只负责让 UI 慢慢接近 targetHealth01
+        
         if (healthSlider != null)
         {
             float current = healthSlider.value;
@@ -78,7 +77,7 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
         if (amount <= 0) return;
 
-        // ✅ 玩家受击音效：统一在这里播，避免其它地方重复播
+       
         AudioManager.I?.PlayPlayerHit();
 
         currentHealth -= amount;
@@ -86,7 +85,7 @@ public class PlayerHealth : MonoBehaviour
 
         targetHealth01 = maxHealth > 0 ? (float)currentHealth / maxHealth : 0f;
 
-        // ✅ 受伤闪红
+       
         FlashDamage();
 
         if (currentHealth <= 0)
@@ -107,7 +106,7 @@ public class PlayerHealth : MonoBehaviour
 
         targetHealth01 = maxHealth > 0 ? (float)currentHealth / maxHealth : 0f;
 
-        // ✅ 真正回血才闪绿（避免满血吃药也闪）
+        
         if (currentHealth > before)
         {
             FlashHeal();
@@ -134,7 +133,7 @@ public class PlayerHealth : MonoBehaviour
 
     IEnumerator FlashRoutine(Color flashColor)
     {
-        // 进入：从0到目标alpha
+       
         float t = 0f;
 
         Color c = flashColor;
@@ -153,7 +152,7 @@ public class PlayerHealth : MonoBehaviour
             yield return null;
         }
 
-        // 淡出：从目标alpha回到0
+        
         t = 0f;
         while (t < flashOutTime)
         {
@@ -167,7 +166,7 @@ public class PlayerHealth : MonoBehaviour
             yield return null;
         }
 
-        // 收尾归零
+       
         Color end = flashColor;
         end.a = 0f;
         screenFlashImage.color = end;
@@ -180,7 +179,7 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
         isDead = true;
 
-        // IMPROVED: 禁用玩家的输入和移动脚本，防止死亡后还能操控
+       
         SimpleFPSMovement movement = GetComponent<SimpleFPSMovement>();
         if (movement != null)
         {

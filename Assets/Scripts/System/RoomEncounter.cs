@@ -19,7 +19,7 @@ public class RoomEncounter : MonoBehaviour
 
     private bool started = false;
 
-    // 统计
+    
     private int aliveSpawnedEnemies = 0;
     private int pendingSpawnPoints = 0;
     private bool allSpawnsFinished = false;
@@ -38,8 +38,7 @@ public class RoomEncounter : MonoBehaviour
 
             sp.Init(this);
 
-            // ✅ 关键：把房间地板 collider 自动给 SpawnPoint
-            // 这样 SpawnPoint 的 Y 就完全由 floorCollider 决定，SpawnPoint 自己的 y 不再影响
+            
             if (sp.floorCollider == null && roomFloorCollider != null)
                 sp.floorCollider = roomFloorCollider;
         }
@@ -61,7 +60,7 @@ public class RoomEncounter : MonoBehaviour
         allSpawnsFinished = false;
         pendingSpawnPoints = spawnPoints.Length;
 
-        // 如果一个房间没有任何 spawnPoints，也应该立刻算“刷完”
+        
         if (pendingSpawnPoints == 0)
         {
             allSpawnsFinished = true;
@@ -80,7 +79,7 @@ public class RoomEncounter : MonoBehaviour
         }
     }
 
-    // --- 给 SpawnPoint / SpawnedEnemyLink 调用 ---
+   
     public void NotifyEnemySpawned(SpawnedEnemyLink link)
     {
         aliveSpawnedEnemies++;
@@ -100,7 +99,7 @@ public class RoomEncounter : MonoBehaviour
 
     public bool IsCleared()
     {
-        // 全部刷完 + 存活为 0 才算房间清完
+      
         return allSpawnsFinished && aliveSpawnedEnemies == 0;
     }
 

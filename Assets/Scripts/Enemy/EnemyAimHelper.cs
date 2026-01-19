@@ -1,8 +1,4 @@
 using UnityEngine;
-
-/// <summary>
-/// 敌人瞄准攻击的工具类，提供共用的瞄准和发射逻辑
-/// </summary>
 public static class EnemyAimHelper
 {
     public static Vector3 GetDirectionToPlayer(Vector3 firePoint, Transform player)
@@ -35,7 +31,7 @@ public static class EnemyAimHelper
 
         GameObject projectile = Object.Instantiate(projectilePrefab, firePoint, Quaternion.identity);
 
-        // ★新增：如果有 BallDamage，默认标记为敌人投射物
+        
         BallDamage bd = projectile.GetComponent<BallDamage>();
         if (bd != null)
         {
@@ -44,7 +40,7 @@ public static class EnemyAimHelper
             bd.damagesEnemies = false;
         }
 
-        // 如果投射物有 ThrowableBall，优先使用它（会禁用 collider，用 cast 命中）
+        
         ThrowableBall throwable = projectile.GetComponent<ThrowableBall>();
         if (throwable != null)
         {

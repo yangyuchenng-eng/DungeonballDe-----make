@@ -12,7 +12,7 @@ public class SpawnedEnemyLink : MonoBehaviour
 
     void OnDisable()
     {
-        // Destroy ??? Disable?????????
+     
         ReportDeadOnce();
     }
 

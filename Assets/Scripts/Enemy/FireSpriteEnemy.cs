@@ -9,7 +9,7 @@ public class FireSpriteEnemy : MonoBehaviour
 
     [Header("Shoot")]
     public Transform firePoint;
-    public GameObject fireballPrefab;      // 你的“火球 prefab”（建议带 ThrowableBall + BallDamage + PickupItem）
+    public GameObject fireballPrefab;     
     public float shootInterval = 1.2f;
     public float shootSpeed = 18f;
     public float minShootDistance = 3f;
@@ -54,7 +54,7 @@ public class FireSpriteEnemy : MonoBehaviour
 
         GameObject go = Instantiate(fireballPrefab, firePoint.position, Quaternion.LookRotation(dir));
 
-        // ✅ 敌人投射物标记（协同你现有球/伤害体系）
+        
         BallDamage bd = go.GetComponent<BallDamage>();
         if (bd != null)
         {
@@ -64,7 +64,7 @@ public class FireSpriteEnemy : MonoBehaviour
             bd.damageToPlayer = fireballDamageToPlayer;
         }
 
-        // ✅ 火焰精灵火球：可被接住
+       
         PickupItem pi = go.GetComponent<PickupItem>();
         if (pi != null)
         {
@@ -73,7 +73,7 @@ public class FireSpriteEnemy : MonoBehaviour
             pi.wasThrownByPlayer = false;
         }
 
-        // ✅ 用你现有 ThrowableBall 直线飞行
+        
         ThrowableBall tb = go.GetComponent<ThrowableBall>();
         if (tb != null)
         {
@@ -81,7 +81,7 @@ public class FireSpriteEnemy : MonoBehaviour
         }
         else
         {
-            // 兜底：没有 ThrowableBall 就用刚体
+            
             Rigidbody rb = go.GetComponent<Rigidbody>();
             if (rb != null)
             {

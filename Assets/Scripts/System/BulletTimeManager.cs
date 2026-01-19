@@ -1,19 +1,19 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// IMPROVED: 调整能量消耗速度（加倍）和恢复时间（减为三分之一）
+
 public class BulletTimeManager : MonoBehaviour
 {
-    public KeyCode bulletTimeKey = KeyCode.Mouse2; // 鼠标中键
+    public KeyCode bulletTimeKey = KeyCode.Mouse2; 
 
     [Header("Time Scale")]
     [Range(0.05f, 1f)]
     public float slowScale = 0.2f;
 
     [Header("Energy Settings")]
-    public float maxEnergy = 5f;          // 最大能量（秒数大致 = 可持续子弹时间）
-    public float drainPerSecond = 2f;     // IMPROVED: 子弹时间时每秒消耗多少能量（从 1f 改为 2f，加倍）
-    public float regenPerSecond = 0.1f;   // IMPROVED: 非子弹时间时每秒恢复多少能量（从 0.5f 改为 1.5f，三倍）
+    public float maxEnergy = 5f;         
+    public float drainPerSecond = 2f;     
+    public float regenPerSecond = 0.1f;   
 
     [Header("UI")]
     public Slider energySlider;
@@ -40,7 +40,7 @@ public class BulletTimeManager : MonoBehaviour
 
         if (isSlowing)
         {
-            // 子弹时间启用时消耗能量，用 unscaledDeltaTime，让消耗速度不被 timeScale 影响
+           
             energy -= drainPerSecond * Time.unscaledDeltaTime;
             if (energy <= 0f)
             {
@@ -50,7 +50,7 @@ public class BulletTimeManager : MonoBehaviour
         }
         else
         {
-            // 非子弹时间时回复能量
+            
             if (energy < maxEnergy)
             {
                 energy += regenPerSecond * Time.unscaledDeltaTime;
@@ -88,7 +88,7 @@ public class BulletTimeManager : MonoBehaviour
 
     void OnDisable()
     {
-        // 安全起见，脚本被禁用时，把时间恢复正常
+        
         Time.timeScale = 1f;
         Time.fixedDeltaTime = defaultFixedDeltaTime;
     }

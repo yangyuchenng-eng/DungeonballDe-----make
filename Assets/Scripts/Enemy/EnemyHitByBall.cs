@@ -51,22 +51,22 @@ public class EnemyHitByBall : MonoBehaviour
     {
         if (enemyHealth == null) return;
 
-        // 找球
+        
         PickupItem item = other.GetComponent<PickupItem>() ?? other.GetComponentInParent<PickupItem>();
         if (item == null) return;
 
-        // 必须是玩家扔出的球，且不在手上
+        
         if (!item.wasThrownByPlayer) return;
         if (item.isHeld) return;
 
-        // ✅ 双重保险 1：Layer 必须是 Pickup（或你指定的层）
+        
         if (requiredLayer != -1 && item.gameObject.layer != requiredLayer)
         {
             if (debugLogs) Debug.Log($"[EnemyHitByBall] 忽略：{item.name} layer={LayerMask.LayerToName(item.gameObject.layer)} 不是 {requiredBallLayerName}", this);
             return;
         }
 
-        // ✅（可选）要求 damagesEnemies=true
+        
         if (requireDamagesEnemiesFlag)
         {
             BallDamage bd = item.GetComponent<BallDamage>();
@@ -77,7 +77,7 @@ public class EnemyHitByBall : MonoBehaviour
             }
         }
 
-        // ✅ 双重保险 2：速度必须达标
+        
         float speed = 0f;
         Rigidbody rb = item.GetComponent<Rigidbody>();
         if (rb != null) speed = rb.linearVelocity.magnitude;
@@ -87,7 +87,7 @@ public class EnemyHitByBall : MonoBehaviour
             if (debugLogs) Debug.Log($"[EnemyHitByBall] 忽略：{item.name} speed={speed:F2} < {minHitSpeed}", this);
 
             if (clearThrownFlagWhenTooSlow)
-                item.wasThrownByPlayer = false; // 关键：防止静止球以后又误杀
+                item.wasThrownByPlayer = false; 
 
             return;
         }
@@ -97,10 +97,10 @@ public class EnemyHitByBall : MonoBehaviour
 
         enemyHealth.TakeDamage(damageFromPlayerBall);
 
-        // ✅ 敌人受击音效（只在真正造成伤害时播）
+        
         AudioManager.I?.PlayEnemyHit();
 
-        // 命中一次后取消“玩家扔出的球”标记，避免连锁秒一串
+        
         item.wasThrownByPlayer = false;
     }
 }

@@ -102,21 +102,21 @@ public class EnemyJumper : MonoBehaviour
             t += Time.deltaTime;
             float normalized = Mathf.Clamp01(t / hopDuration);
 
-            // 原逻辑：本帧水平位移
+           
             Vector3 desiredHorizontal = dir * moveSpeed * Time.deltaTime;
 
-            // ✅ 关键：把本帧位移拆小步，每步都做 Cast
+          
             Vector3 moved = StepMoveWithCasts(desiredHorizontal);
 
             Vector3 pos = transform.position + moved;
 
-            // 原逻辑：抛物线高度（不改）
+           
             float yOffset = hopHeight * 4f * normalized * (1f - normalized);
             pos.y = groundY + yOffset;
 
             transform.position = pos;
 
-            // ✅ 去穿透（只推XZ），避免“已经插进墙里导致下一帧直接穿”
+        
             if (depenetrateAfterMove)
                 DepenetrateXZ();
 
@@ -145,17 +145,14 @@ public class EnemyJumper : MonoBehaviour
         for (int i = 0; i < steps; i++)
         {
             Vector3 safe = ResolveHorizontalMoveWithCast(perStep);
-            transform.position += safe;     // 这里先“走一步”
+            transform.position += safe;    
             accum += safe;
 
             if (depenetrateAfterMove)
                 DepenetrateXZ();
         }
 
-        // 注意：我们在循环里已经把 transform.position 改了
-        // 所以返回值给外层只是“统计量”，外层会用 pos 再覆盖 y
-        // 为避免外层重复加位移，这里返回 Vector3.zero
-        // ✅ 外层会用 transform.position 当前值再设置 y
+        
         return Vector3.zero;
     }
 
@@ -221,7 +218,7 @@ public class EnemyJumper : MonoBehaviour
     {
         if (bodyCol == null) return;
 
-        // 用 bounds 近似一个 capsule 来做 Overlap + ComputePenetration 推出
+       
         Bounds b = bodyCol.bounds;
         float radius = Mathf.Max(0.01f, Mathf.Min(b.extents.x, b.extents.z));
         float halfHeight = Mathf.Max(radius, b.extents.y);
@@ -246,7 +243,7 @@ public class EnemyJumper : MonoBehaviour
                         other, other.transform.position, other.transform.rotation,
                         out Vector3 dir, out float dist))
                 {
-                    // 只在 XZ 推出，避免把它推上天/推下地
+                    
                     dir.y = 0f;
                     float len = dir.magnitude;
                     if (len > 0.0001f)
@@ -260,7 +257,7 @@ public class EnemyJumper : MonoBehaviour
 
             if (!movedAny) break;
 
-            // 更新 capsule 端点（因为 transform.position 变了）
+           ）
             b = bodyCol.bounds;
             center = b.center;
             p1 = center + Vector3.up * (halfHeight - radius);
