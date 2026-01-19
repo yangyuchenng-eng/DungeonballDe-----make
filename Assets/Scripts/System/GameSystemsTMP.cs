@@ -99,8 +99,11 @@ public class GameSystemsTMP : MonoBehaviour
     {
         TryDisableDebugUpdater();
 
-        AutoBindGlobalUI();      // ✅ 不再全局扫描
+        AutoBindGlobalUI();
         BindAllButtonsOnce();
+
+        // ✅ 新增：菜单按钮也自动绑定一次（不依赖 MenuUIBinder）
+        TryBindMenuButtonsAndTexts();
 
         HideAllPanels();
         ApplySound();
@@ -145,7 +148,7 @@ public class GameSystemsTMP : MonoBehaviour
         SceneManager.LoadScene(level1Scene);
     }
 
-    // 菜单场景用：每次进入菜单，把菜单文字重新绑定（因为菜单会卸载/重载）
+    // 菜单场景用：如果你还在用 MenuUIBinder，这个接口仍然保留
     public void BindMenuTexts(TMP_Text sens, TMP_Text sound)
     {
         menuSensitivityText = sens;
@@ -267,6 +270,12 @@ public class GameSystemsTMP : MonoBehaviour
         AutoBindGlobalUI();
         BindAllButtonsOnce();
 
+        // ✅ 新增：每次进菜单都尝试自动绑定菜单按钮 + 文本
+        if (scene.name == menuScene)
+        {
+            TryBindMenuButtonsAndTexts();
+        }
+
         ApplySound();
         ApplySensitivityToPlayer();
         CachePlayerScripts();
@@ -289,10 +298,8 @@ public class GameSystemsTMP : MonoBehaviour
 
     void AutoBindGlobalUI()
     {
-        // 1) 只在自己的子树里找：你的 Canvas_Global 已经是 GlobalSystems 子物体（最稳、最快）
         Transform canvas = transform.Find(globalCanvasName);
 
-        // 2) 兜底：如果你一不小心把 Canvas_Global 放在场景里（不是子物体），只用一次 GameObject.Find 把它接过来
         if (canvas == null)
         {
             GameObject canvasGO = GameObject.Find(globalCanvasName);
@@ -305,7 +312,6 @@ public class GameSystemsTMP : MonoBehaviour
 
         if (canvas == null) return;
 
-        // 绑定三个 Panel（transform.Find 能找到 inactive 子物体）
         if (pausePanel == null) pausePanel = canvas.Find(pausePanelName)?.gameObject;
         if (winPanel == null) winPanel = canvas.Find(winPanelName)?.gameObject;
         if (deathPanel == null) deathPanel = canvas.Find(deathPanelName)?.gameObject;
@@ -359,6 +365,53 @@ public class GameSystemsTMP : MonoBehaviour
             if (deathReturnMenuButton == null)
                 deathReturnMenuButton = d.Find(returnMenuButtonName)?.GetComponent<Button>();
         }
+    }
+
+    // ----------------- ✅ 新增：自动绑定菜单按钮（解决你现在“点了没反应”） -----------------
+
+    void TryBindMenuButtonsAndTexts()
+    {
+        // 找菜单里的两个按钮（按名字）
+        Button menuSensBtn = FindSceneButtonByName(sensitivityButtonName);
+        Button menuSoundBtn = FindSceneButtonByName(soundButtonName);
+
+        if (menuSensBtn != null)
+        {
+            menuSensBtn.onClick.RemoveListener(CycleSensitivity);
+            menuSensBtn.onClick.AddListener(CycleSensitivity);
+
+            // 自动抓按钮文字
+            TMP_Text label = menuSensBtn.transform.Find(buttonLabelTMPName)?.GetComponent<TMP_Text>();
+            if (label != null) menuSensitivityText = label;
+        }
+
+        if (menuSoundBtn != null)
+        {
+            menuSoundBtn.onClick.RemoveListener(ToggleSound);
+            menuSoundBtn.onClick.AddListener(ToggleSound);
+
+            TMP_Text label = menuSoundBtn.transform.Find(buttonLabelTMPName)?.GetComponent<TMP_Text>();
+            if (label != null) menuSoundText = label;
+        }
+
+        RefreshSettingTexts();
+    }
+
+    Button FindSceneButtonByName(string goName)
+    {
+        // 先排除 Global Canvas（避免找到 PausePanel 的按钮）
+        Transform globalCanvas = transform.Find(globalCanvasName);
+
+        GameObject go = GameObject.Find(goName);
+        if (go == null) return null;
+
+        if (globalCanvas != null && go.transform.IsChildOf(globalCanvas))
+        {
+            // 如果找到的是 Global Canvas 里的同名对象，就返回 null，让别的方式处理
+            return null;
+        }
+
+        return go.GetComponent<Button>();
     }
 
     // ----------------- Button Binding -----------------
@@ -443,6 +496,12 @@ public class GameSystemsTMP : MonoBehaviour
     {
         AudioListener.pause = !SoundOn;
         AudioListener.volume = SoundOn ? 1f : 0f;
+
+        if (AudioManager.I != null)
+        {
+            AudioManager.I.SetSfxEnabled(SoundOn);
+            AudioManager.I.SetMusicEnabled(SoundOn);
+        }
     }
 
     void RefreshSettingTexts()
@@ -506,7 +565,6 @@ public class GameSystemsTMP : MonoBehaviour
     {
         if (!disableDebugUpdater) return;
 
-        // 直接按名字找（你 Hierarchy 里就是这个名字）
         GameObject go = GameObject.Find(debugUpdaterObjectName);
         if (go != null && go.activeSelf)
         {

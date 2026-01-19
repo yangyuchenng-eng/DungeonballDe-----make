@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
@@ -16,17 +16,17 @@ public class MenuUIBinder : MonoBehaviour
 
     void Start()
     {
-        // ?? GameSystemsTMP ????
+        // 等待 GameSystemsTMP 单例存在
         if (GameSystemsTMP.I == null)
         {
-            Debug.LogError("[MenuUIBinder] GameSystemsTMP.I is null. ??? MenuScene ?? GlobalSystems ??? GameSystemsTMP?");
+            Debug.LogError("[MenuUIBinder] GameSystemsTMP.I is null. 请确认 MenuScene 里有 GlobalSystems 并挂了 GameSystemsTMP。");
             return;
         }
 
-        // ??????????????????????????/???
+        // 重新绑定菜单文字（每次进菜单都要做，因为菜单会被卸载/重载）
         GameSystemsTMP.I.BindMenuTexts(menuSensitivityText, menuSoundText);
 
-        // ?????????????????????�??????�?
+        // 重新绑定四个按钮（每次进菜单都做，确保不会“回菜单后失效”）
         BindButton(startButton, GameSystemsTMP.I.StartGame);
         BindButton(sensitivityButton, GameSystemsTMP.I.CycleSensitivity);
         BindButton(soundButton, GameSystemsTMP.I.ToggleSound);

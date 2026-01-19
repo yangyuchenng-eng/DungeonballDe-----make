@@ -42,6 +42,11 @@ public class SmartBounceBall : MonoBehaviour
         Vector3 v = rb.linearVelocity;
         if (v.sqrMagnitude < 0.0001f) return; // 已经很慢就不处理
 
+        // ✅ 弹球音效：发生有效碰撞时播（用速度做一个简单音量系数）
+        float volMul = Mathf.Clamp01(v.magnitude / 20f);
+        if (volMul > 0.05f)
+            AudioManager.I?.PlayBounce(volMul);
+
         GameObject other = collision.gameObject;
         int otherLayer = other.layer;
 

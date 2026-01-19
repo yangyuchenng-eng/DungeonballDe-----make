@@ -2,22 +2,24 @@ using UnityEngine;
 
 public class EnemyGhost : MonoBehaviour
 {
-    [Header("Movement (Transform)")]
+    [Header("Movement")]
     public float moveSpeed = 4f;
     public float rotationSpeed = 10f;
     public float arriveDistance = 0.3f;
-
-    [Tooltip("锁定出生时的 Y，只在 XZ 平移")]
     public bool lockY = true;
 
     [Header("Search")]
     public float searchInterval = 0.5f;
 
-    [Header("Pickup")]
-    [Tooltip("幽灵只捡这个 layer 的球（Key 不在这个 layer 就不会捡）")]
-    public string pickupLayerName = "Pickup";
+    [Header("Pickup Range (Child Trigger Collider)")]
+    [Tooltip("把子物体上的 SphereCollider(Trigger) 拖到这里，用来当捡球检测范围。")]
+    public SphereCollider pickupRange;
 
-    [Tooltip("拿在手里时改成这个 layer（可选）")]
+    [Tooltip("真正捡起球需要离得更近（防止边缘抖动）。<=0 则使用 pickupRange 半径的 0.6 倍。")]
+    public float pickupDistance = 0f;
+
+    [Header("Pickup")]
+    public string pickupLayerName = "Pickup";
     public string pickedLayerName = "Picked";
 
     [Header("Hand / Holding")]
@@ -39,7 +41,6 @@ public class EnemyGhost : MonoBehaviour
 
     private float nextSearchTime = 0f;
     private float lastThrowTime = -999f;
-
     private float fixedY;
 
     void Awake()
@@ -62,17 +63,28 @@ public class EnemyGhost : MonoBehaviour
             return;
         }
 
-        // 没球：定期找最近的可捡球
+        // 没拿球：按间隔在范围内找球
         if (heldBall == null && Time.time >= nextSearchTime)
         {
-            targetBall = FindNearestPickupBall();
+            targetBall = FindNearestPickupBallInRange();
             nextSearchTime = Time.time + searchInterval;
 
             if (debugLogs)
-                Debug.Log($"[EnemyGhost] targetBall = {(targetBall ? targetBall.name : "null")}", this);
+                Debug.Log($"[EnemyGhost] targetBall(inRange) = {(targetBall ? targetBall.name : "null")}", this);
         }
 
-        // 有球：追玩家 + 冷却到就扔
+        // 如果目标球在范围内并且已经足够近，则直接捡起来（不依赖 OnTrigger）
+        if (heldBall == null && targetBall != null && !targetBall.isHeld)
+        {
+            float pickDist = GetPickupDistance();
+            float d2 = (targetBall.transform.position - transform.position).sqrMagnitude;
+            if (d2 <= pickDist * pickDist)
+            {
+                PickupBall(targetBall);
+            }
+        }
+
+        // 有球：追玩家 + 到点就扔
         if (heldBall != null)
         {
             MoveTowards(player.position);
@@ -83,7 +95,7 @@ public class EnemyGhost : MonoBehaviour
             return;
         }
 
-        // 没球：优先追球，否则追玩家
+        // 没球：有目标球就追球，否则追玩家
         if (targetBall != null && !targetBall.isHeld)
             MoveTowards(targetBall.transform.position);
         else
@@ -108,29 +120,96 @@ public class EnemyGhost : MonoBehaviour
 
         Vector3 dir = to / Mathf.Max(0.001f, dist);
 
-        // 旋转朝向（只转 Y）
         if (dir.sqrMagnitude > 0.0001f)
         {
             Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
         }
 
-        // 纯平移（按你要求：不做任何防穿墙处理）
         Vector3 move = dir * moveSpeed * Time.deltaTime;
         Vector3 next = pos + move;
-
         if (lockY) next.y = fixedY;
 
         transform.position = next;
     }
 
-    PickupItem FindNearestPickupBall()
-    {
-        int pickupLayer = LayerMask.NameToLayer(pickupLayerName); // -1 if not exists
+    // ---------------- Range-based ball query ----------------
 
+    Vector3 GetPickupRangeCenter()
+    {
+        if (pickupRange == null) return transform.position;
+        return pickupRange.transform.TransformPoint(pickupRange.center);
+    }
+
+    float GetPickupRangeRadius()
+    {
+        if (pickupRange == null) return 0f;
+        // SphereCollider 半径受 transform scale 影响，这里取最大缩放轴作为近似
+        Vector3 lossy = pickupRange.transform.lossyScale;
+        float scale = Mathf.Max(lossy.x, lossy.y, lossy.z);
+        return pickupRange.radius * scale;
+    }
+
+    float GetPickupDistance()
+    {
+        if (pickupDistance > 0f) return pickupDistance;
+
+        float r = GetPickupRangeRadius();
+        if (r <= 0f) return 1.5f; // 没设置范围时的兜底
+        return r * 0.6f;
+    }
+
+    PickupItem FindNearestPickupBallInRange()
+    {
+        int pickupLayer = LayerMask.NameToLayer(pickupLayerName);
+
+        float rangeR = GetPickupRangeRadius();
+        if (rangeR <= 0.0001f)
+        {
+            // 没拖 pickupRange 就退回原逻辑（但会跨图找球），建议必须设置
+            return FindNearestPickupBall_FallbackGlobal(pickupLayer);
+        }
+
+        Vector3 center = GetPickupRangeCenter();
+
+        // ✅ 只在范围球里找碰撞体（性能更好，也不会跨地图）
+        Collider[] hits = Physics.OverlapSphere(center, rangeR, ~0, QueryTriggerInteraction.Collide);
+
+        PickupItem best = null;
+        float bestD2 = float.MaxValue;
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider c = hits[i];
+            if (c == null) continue;
+
+            PickupItem it = c.GetComponentInParent<PickupItem>();
+            if (it == null) continue;
+
+            if (!it.isPickupable) continue;
+            if (it.isHeld) continue;
+
+            if (pickupLayer != -1 && it.gameObject.layer != pickupLayer) continue;
+
+            float d2 = (it.transform.position - transform.position).sqrMagnitude;
+            if (d2 < bestD2)
+            {
+                bestD2 = d2;
+                best = it;
+            }
+        }
+
+        return best;
+    }
+
+    // 如果你忘了拖 pickupRange，这个兜底会回到全局找（不推荐，但至少不会空指针）
+    PickupItem FindNearestPickupBall_FallbackGlobal(int pickupLayer)
+    {
         PickupItem[] all = FindObjectsByType<PickupItem>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         PickupItem best = null;
         float bestDist = float.MaxValue;
+
+        Vector3 ghostPos = transform.position;
 
         foreach (var it in all)
         {
@@ -140,10 +219,10 @@ public class EnemyGhost : MonoBehaviour
 
             if (pickupLayer != -1 && it.gameObject.layer != pickupLayer) continue;
 
-            float d = Vector3.Distance(transform.position, it.transform.position);
-            if (d < bestDist)
+            float d2 = (it.transform.position - ghostPos).sqrMagnitude;
+            if (d2 < bestDist)
             {
-                bestDist = d;
+                bestDist = d2;
                 best = it;
             }
         }
@@ -151,21 +230,7 @@ public class EnemyGhost : MonoBehaviour
         return best;
     }
 
-    // 捡球触发：你可以把这个脚本挂在“Trigger 子物体”上，
-    // 或者把 Trigger 子物体的 Collider 设成 IsTrigger 并确保它能触发到这里
-    void OnTriggerEnter(Collider other)
-    {
-        if (heldBall != null) return;
-
-        PickupItem ball = other.GetComponentInParent<PickupItem>();
-        if (ball == null) return;
-        if (!ball.isPickupable || ball.isHeld) return;
-
-        int pickupLayer = LayerMask.NameToLayer(pickupLayerName);
-        if (pickupLayer != -1 && ball.gameObject.layer != pickupLayer) return;
-
-        PickupBall(ball);
-    }
+    // ---------------- Pickup / Throw (原逻辑保持) ----------------
 
     void PickupBall(PickupItem ball)
     {
@@ -242,43 +307,17 @@ public class EnemyGhost : MonoBehaviour
             brb.linearVelocity = dir * throwSpeed;
 
         lastThrowTime = Time.time;
-
-        if (debugLogs) Debug.Log("[EnemyGhost] Threw ball", this);
     }
 
-    // 幽灵死了，球别跟着一起没了
-    void OnDisable() => DropHeldBallIfAny();
-    void OnDestroy() => DropHeldBallIfAny();
-
-    private void DropHeldBallIfAny()
+#if UNITY_EDITOR
+    void OnDrawGizmosSelected()
     {
-        if (heldBall == null) return;
-
-        PickupItem ball = heldBall;
-        heldBall = null;
-
-        ball.transform.SetParent(null, true);
-        ball.isHeld = false;
-        ball.wasThrownByPlayer = false;
-
-        int pickupLayer = LayerMask.NameToLayer(pickupLayerName);
-        if (pickupLayer != -1) ball.gameObject.layer = pickupLayer;
-
-        Rigidbody brb = ball.GetComponent<Rigidbody>();
-        if (brb != null)
+        if (pickupRange != null)
         {
-            brb.isKinematic = false;
-            brb.useGravity = true;
-            brb.linearVelocity = Vector3.zero;
-            brb.angularVelocity = Vector3.zero;
-        }
-
-        BallDamage bd = ball.GetComponent<BallDamage>();
-        if (bd != null)
-        {
-            bd.isEnemyProjectile = false;
-            bd.damagesPlayer = false;
-            bd.damagesEnemies = true;
+            Vector3 c = pickupRange.transform.TransformPoint(pickupRange.center);
+            float r = pickupRange.radius * Mathf.Max(pickupRange.transform.lossyScale.x, pickupRange.transform.lossyScale.y, pickupRange.transform.lossyScale.z);
+            Gizmos.DrawWireSphere(c, r);
         }
     }
+#endif
 }

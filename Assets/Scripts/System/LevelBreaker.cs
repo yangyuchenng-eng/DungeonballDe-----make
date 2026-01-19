@@ -42,6 +42,10 @@ public class LevelBreaker : MonoBehaviour
         if (requirePlayerThrown && !item.wasThrownByPlayer) return;
 
         hp--;
+
+        // ✅ 目标物/关卡触发器受击音效（有效命中时播）
+        AudioManager.I?.PlayObjectiveHit();
+
         if (hp <= 0)
         {
             if (breakVfxPrefab != null)

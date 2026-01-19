@@ -89,21 +89,16 @@ public class EnemyTouchDamage : MonoBehaviour
     /// </summary>
     bool IsAllowedToDealtDamage()
     {
-        // 如果没有设置任何允许的 Tag，表示不检查，总是允许
-        if (allowedTags == null || allowedTags.Length == 0)
-        {
-            return true;
-        }
+        if (allowedTags == null || allowedTags.Length == 0) return true;
 
-        // 检查当前物体的 Tag 是否在允许列表中
+        // ✅ 改成检查 root 的 tag（脚本挂子物体也能正确识别 slime）
+        Transform root = transform.root;
+
         foreach (string allowedTag in allowedTags)
         {
-            if (gameObject.CompareTag(allowedTag))
-            {
-                return true;
-            }
+            if (root != null && root.CompareTag(allowedTag)) return true;
         }
-
         return false;
     }
+
 }

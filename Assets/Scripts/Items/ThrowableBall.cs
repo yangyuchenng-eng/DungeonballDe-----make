@@ -151,6 +151,9 @@ public class ThrowableBall : MonoBehaviour
 
             eh.TakeDamage(pickupItem.damageAmount);
 
+            // ✅ 敌人受击音效（只在真正造成伤害时播）
+            AudioManager.I?.PlayEnemyHit();
+
             // 防止同一次飞行反复结算
             pickupItem.wasThrownByPlayer = false;
             return;

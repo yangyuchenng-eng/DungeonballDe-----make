@@ -72,6 +72,7 @@ public class PlayerHands : MonoBehaviour
 
     void Update()
     {
+        // 左键：左手
         if (Input.GetMouseButtonDown(0))
         {
             if (leftHeldItem == null)
@@ -89,10 +90,13 @@ public class PlayerHands : MonoBehaviour
             }
             else
             {
-                ThrowFromHand(true, ref leftHeldItem);
+                // ✅ 若不可扔，忽略
+                if (leftHeldItem.throwable)
+                    ThrowFromHand(true, ref leftHeldItem);
             }
         }
 
+        // 右键：右手
         if (Input.GetMouseButtonDown(1))
         {
             if (rightHeldItem == null)
@@ -110,7 +114,9 @@ public class PlayerHands : MonoBehaviour
             }
             else
             {
-                ThrowFromHand(false, ref rightHeldItem);
+                // ✅ 若不可扔，忽略
+                if (rightHeldItem.throwable)
+                    ThrowFromHand(false, ref rightHeldItem);
             }
         }
     }
@@ -175,6 +181,7 @@ public class PlayerHands : MonoBehaviour
 
         if (bestItem != null)
         {
+            // ✅ 改动点：不再“直接吃掉”。药水也先拉回来，再到手瞬间自动使用。
             StartCoroutine(ArmGrabCoroutine(
                 isLeftHand,
                 handBase,
@@ -229,6 +236,7 @@ public class PlayerHands : MonoBehaviour
         if (totalDist < armMinLength) totalDist = armMinLength;
         Vector3 dirNorm = dir / totalDist;
 
+        // 伸手
         float t = 0f;
         while (t < 1f)
         {
@@ -249,6 +257,7 @@ public class PlayerHands : MonoBehaviour
             yield return null;
         }
 
+        // 收回 + 拉物体
         t = 0f;
         while (t < 1f)
         {
@@ -273,8 +282,24 @@ public class PlayerHands : MonoBehaviour
             yield return null;
         }
 
-        AttachItemToHand(isLeftHand, handBase, item);
+        // ✅ 到手瞬间：如果是药水，自动使用并消失，不占手位
+        var potion = item.GetComponent<HealthPotionPickup>();
+        if (potion != null)
+        {
+            var ph = GetComponent<PlayerHealth>();
+            potion.Consume(ph);
 
+            // 确保手里不占用
+            if (isLeftHand) leftHeldItem = null;
+            else rightHeldItem = null;
+        }
+        else
+        {
+            // 不是药水：正常挂到手上
+            AttachItemToHand(isLeftHand, handBase, item);
+        }
+
+        // 手臂复位
         handArm.localPosition = armOrigLocalPos;
         handArm.localRotation = armOrigLocalRot;
         handArm.localScale = armOrigLocalScale;
@@ -391,6 +416,7 @@ public class PlayerHands : MonoBehaviour
         return aimDir.normalized;
     }
 
+    // 只展示需要修改的那个函数完整体（其余代码保持你文件原样）
     void ThrowFromHand(bool isLeftHand, ref PickupItem handSlot)
     {
         if (handSlot == null) return;
@@ -415,6 +441,9 @@ public class PlayerHands : MonoBehaviour
 
         Vector3 throwDir = GetAutoAimDirectionFromMouse(origin);
 
+        // ✅ 扔球音效：确定要扔出时播一次
+        AudioManager.I?.PlayThrow();
+
         ThrowableBall projectile = item.GetComponent<ThrowableBall>();
 
         if (projectile != null)
@@ -433,4 +462,5 @@ public class PlayerHands : MonoBehaviour
             }
         }
     }
+
 }

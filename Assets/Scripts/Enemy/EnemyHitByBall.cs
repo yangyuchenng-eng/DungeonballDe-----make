@@ -97,6 +97,9 @@ public class EnemyHitByBall : MonoBehaviour
 
         enemyHealth.TakeDamage(damageFromPlayerBall);
 
+        // ✅ 敌人受击音效（只在真正造成伤害时播）
+        AudioManager.I?.PlayEnemyHit();
+
         // 命中一次后取消“玩家扔出的球”标记，避免连锁秒一串
         item.wasThrownByPlayer = false;
     }
