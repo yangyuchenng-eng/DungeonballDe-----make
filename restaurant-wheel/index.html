@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#fff7ea" />
+<title>今天吃什么？餐厅随机转盘</title>
+<style>
+:root{--ink:#4a210d;--gold:#f4b400;--red:#ed4b2f;--card:rgba(255,255,255,.9)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;background:radial-gradient(circle at 50% 0,#fffdf7 0,#fff4de 55%,#ffe6bd 100%);color:var(--ink)}
+body{display:flex;justify-content:center;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom)}
+.app{width:min(100%,560px);text-align:center;padding:18px 0 28px}
+h1{font-size:clamp(31px,8vw,46px);margin:4px 0 0;font-weight:900;letter-spacing:-2px;text-shadow:0 3px 0 #fff}
+.sub{margin:5px 0 15px;font-size:15px;font-weight:700;color:#8b4b22}
+.stage{position:relative;width:min(92vw,500px);aspect-ratio:1;margin:0 auto;filter:drop-shadow(0 16px 22px rgba(91,43,8,.2))}
+.rim{position:absolute;inset:0;border-radius:50%;background:linear-gradient(145deg,#ffe48b,#9b4d10 22%,#f6bd3c 47%,#7f3507 72%,#ffdd71);padding:16px;box-shadow:inset 0 0 0 4px #fff0b4,inset 0 0 0 8px #7b3309}
+canvas{width:100%;height:100%;display:block;border-radius:50%;background:#fff}
+.pointer{position:absolute;z-index:5;left:50%;top:-4px;transform:translateX(-50%);width:0;height:0;border-left:23px solid transparent;border-right:23px solid transparent;border-top:0;border-bottom:55px solid #f04428;filter:drop-shadow(0 4px 2px rgba(0,0,0,.25))}
+.pointer:after{content:"";position:absolute;left:-16px;top:5px;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:38px solid #ff7a35}
+.spin{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);width:116px;height:116px;border:9px solid #ffd76a;border-radius:50%;background:linear-gradient(#ff7547,#d62f1e);color:white;font-size:23px;font-weight:900;line-height:1.15;box-shadow:0 7px 0 #8d2a13,0 0 0 4px #7b3309,inset 0 4px 10px rgba(255,255,255,.35);cursor:pointer;touch-action:manipulation}
+.spin:active{transform:translate(-50%,-47%);box-shadow:0 3px 0 #8d2a13,0 0 0 4px #7b3309}
+.spin[disabled]{opacity:.8;cursor:default}
+.result{margin:19px auto 10px;width:min(94%,480px);min-height:76px;padding:14px 16px;border-radius:22px;background:var(--card);box-shadow:0 8px 24px rgba(109,52,6,.12);display:flex;align-items:center;justify-content:center;flex-direction:column;border:1px solid rgba(255,255,255,.8)}
+.result small{font-size:13px;color:#956038;font-weight:700}.result strong{font-size:24px;margin-top:3px;line-height:1.25}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:10px}
+.action{border:0;border-radius:999px;padding:12px 20px;font-size:16px;font-weight:800;background:#5a2a0b;color:#fff;box-shadow:0 5px 12px rgba(90,42,11,.18)}
+.action.secondary{background:#fff;color:#6d3511;border:1px solid #e8c69d}
+.note{font-size:12px;color:#9b6b45;margin-top:12px}
+@media(max-width:390px){.rim{padding:13px}.spin{width:96px;height:96px;border-width:7px;font-size:20px}.pointer{border-left-width:19px;border-right-width:19px;border-bottom-width:47px}.pointer:after{left:-13px;border-left-width:13px;border-right-width:13px;border-bottom-width:32px}}
+</style>
+</head>
+<body>
+<main class="app">
+  <h1>今天吃什么？</h1>
+  <div class="sub">7 家餐厅 · 等概率随机</div>
+  <section class="stage" id="stage" aria-label="餐厅随机转盘">
+    <div class="rim"><canvas id="wheel"></canvas></div>
+    <div class="pointer" aria-hidden="true"></div>
+    <button class="spin" id="spin" type="button">点击<br>开始</button>
+  </section>
+  <div class="result" id="result" aria-live="polite"><small>点中间按钮转动</small><strong>让转盘替你决定</strong></div>
+  <div class="actions">
+    <button class="action" id="again" type="button">再转一次</button>
+    <button class="action secondary" id="map" type="button" disabled>地图搜索</button>
+  </div>
+  <div class="note">转盘停止后，顶部指针指向的餐厅就是结果。</div>
+</main>
+<script>
+(() => {
+  const restaurants = [
+    {label:['Uniko','上海风味'], result:'Uniko（上海风味）', query:'Uniko Barcelona'},
+    {label:['川魂串串香','自助火锅'], result:'川魂串串香自助火锅', query:'川魂串串香自助火锅 Barcelona'},
+    {label:['CHILA'], result:'CHILA', query:'CHILA Barcelona restaurant'},
+    {label:['蜀大侠','自助火锅'], result:'蜀大侠自助火锅', query:'蜀大侠自助火锅 Barcelona'},
+    {label:['帽牌货冒菜'], result:'帽牌货冒菜', query:'Mao master Barcelona'},
+    {label:['La Medusa 73','海鲜饭'], result:'La Medusa 73（海鲜饭）', query:'La Medusa 73 Barcelona'},
+    {label:['满锅锅','湖南菜'], result:'满锅锅湖南菜 Mancoco', query:'满锅锅湖南菜 Mancoco Barcelona'}
+  ];
+  const colors=['#ff991c','#ee4933','#9952c7','#347ad2','#22aaa2','#70b72d','#f6c12d'];
+  const canvas=document.getElementById('wheel');
+  const ctx=canvas.getContext('2d');
+  const spinBtn=document.getElementById('spin');
+  const againBtn=document.getElementById('again');
+  const result=document.getElementById('result');
+  const mapBtn=document.getElementById('map');
+  const arc=Math.PI*2/restaurants.length;
+  let rotation=0, spinning=false, chosen=null;
+
+  function resize(){
+    const rect=canvas.getBoundingClientRect();
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.round(rect.width*dpr); canvas.height=Math.round(rect.height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0); draw();
+  }
+
+  function roundedText(lines,x,y,angle,maxWidth){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(angle+Math.PI/2);
+    const normalized=((angle%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+    if(normalized>Math.PI/2 && normalized<Math.PI*1.5) ctx.rotate(Math.PI);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const base=canvas.getBoundingClientRect().width;
+    const size=lines.length>1?Math.max(14,Math.min(23,base/21)):Math.max(16,Math.min(27,base/18));
+    ctx.font=`900 ${size}px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif`;
+    ctx.lineJoin='round'; ctx.strokeStyle='rgba(70,25,0,.55)'; ctx.lineWidth=5; ctx.fillStyle='#fff';
+    const gap=size*1.08;
+    lines.forEach((line,i)=>{const yy=(i-(lines.length-1)/2)*gap;ctx.strokeText(line,0,yy,maxWidth);ctx.fillText(line,0,yy,maxWidth)});
+    ctx.restore();
+  }
+
+  function draw(){
+    const w=canvas.getBoundingClientRect().width,h=w,cx=w/2,cy=h/2,r=w/2;
+    ctx.clearRect(0,0,w,h);
+    restaurants.forEach((item,i)=>{
+      const start=rotation+i*arc-Math.PI/2;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r-1,start,start+arc);ctx.closePath();
+      ctx.fillStyle=colors[i];ctx.fill();ctx.strokeStyle='#ffe7a3';ctx.lineWidth=3;ctx.stroke();
+      const mid=start+arc/2; const tx=cx+Math.cos(mid)*r*.66; const ty=cy+Math.sin(mid)*r*.66;
+      roundedText(item.label,tx,ty,mid,r*.58);
+    });
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(.62,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(70,20,0,.14)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  }
+
+  function easeOutCubic(t){return 1-Math.pow(1-t,3)}
+  function spin(){
+    if(spinning)return; spinning=true; chosen=null; mapBtn.disabled=true; spinBtn.disabled=true;
+    spinBtn.innerHTML='转动<br>中…'; result.innerHTML='<small>正在随机选择</small><strong>转盘转起来了</strong>';
+    const target=Math.floor(Math.random()*restaurants.length);
+    const base=-(target+.5)*arc;
+    const start=rotation; let end=base;
+    while(end<start+Math.PI*2*7) end+=Math.PI*2;
+    const duration=4200+Math.random()*900, begin=performance.now();
+    function frame(now){
+      const t=Math.min(1,(now-begin)/duration); rotation=start+(end-start)*easeOutCubic(t); draw();
+      if(t<1){requestAnimationFrame(frame)}else{
+        rotation=((end%(Math.PI*2))+Math.PI*2)%(Math.PI*2);draw();spinning=false;chosen=restaurants[target];spinBtn.disabled=false;spinBtn.innerHTML='再转<br>一次';mapBtn.disabled=false;
+        result.innerHTML=`<small>转盘选中了</small><strong>${chosen.result}</strong>`;
+        if(navigator.vibrate) navigator.vibrate([80,40,120]);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  spinBtn.addEventListener('click',spin); againBtn.addEventListener('click',spin);
+  document.getElementById('stage').addEventListener('click',e=>{if(e.target===spinBtn)return;if(!spinning)spin()});
+  mapBtn.addEventListener('click',()=>{if(chosen)location.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(chosen.query)});
+  addEventListener('resize',resize); resize();
+})();
+</script>
+</body>
+</html>
