@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>今天吃什么？餐厅随机转盘</title>
+<style>
+  :root{--bg:#fff8ed;--ink:#402312;--card:#fffdf8;--accent:#ef4b2f}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 10%,#fffdf7 0,#fff8ed 50%,#f7ead5 100%);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:var(--ink);display:flex;justify-content:center;align-items:flex-start}
+  .app{width:min(100%,560px);padding:24px 16px 40px;text-align:center}
+  h1{margin:4px 0 2px;font-size:clamp(34px,9vw,52px);line-height:1.05;letter-spacing:-1px}
+  .sub{font-weight:700;opacity:.68;margin-bottom:18px}
+  .wheel-wrap{position:relative;width:min(92vw,520px);aspect-ratio:1;margin:0 auto;filter:drop-shadow(0 18px 28px rgba(101,57,23,.18))}
+  canvas{width:100%;height:100%;display:block}
+  .pointer{position:absolute;left:50%;top:-2px;transform:translateX(-50%);width:0;height:0;border-left:22px solid transparent;border-right:22px solid transparent;border-top:48px solid #ff4b2b;filter:drop-shadow(0 4px 2px rgba(0,0,0,.22));z-index:3}
+  .hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:27%;aspect-ratio:1;border-radius:50%;border:7px solid #ffd06b;background:linear-gradient(#ff765c,#e93820);box-shadow:0 8px 15px rgba(98,32,12,.3),inset 0 3px 0 rgba(255,255,255,.4);color:#fff;font-weight:900;font-size:clamp(18px,5vw,28px);display:grid;place-items:center;z-index:2;cursor:pointer;user-select:none}
+  .hub:active{transform:translate(-50%,-50%) scale(.96)}
+  .result{margin:20px auto 12px;padding:14px 16px;min-height:60px;border-radius:18px;background:rgba(255,255,255,.86);box-shadow:0 7px 18px rgba(90,48,18,.09);font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .result strong{font-size:24px;margin-left:6px}
+  button{border:0;border-radius:16px;background:#2c211a;color:#fff;font-size:18px;font-weight:800;padding:14px 26px;box-shadow:0 7px 0 #140f0c;cursor:pointer}
+  button:active{transform:translateY(4px);box-shadow:0 3px 0 #140f0c}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .note{font-size:13px;opacity:.55;margin-top:16px}
+</style>
+</head>
+<body>
+<main class="app">
+  <h1>今天吃什么？</h1>
+  <div class="sub">🍜 7 家餐厅 · 随机转盘</div>
+  <div class="wheel-wrap" id="wheelWrap">
+    <div class="pointer" aria-hidden="true"></div>
+    <canvas id="wheel" width="1000" height="1000"></canvas>
+    <div class="hub" id="hub" role="button" tabindex="0">点击<br>开始</div>
+  </div>
+  <div class="result" id="result">点一下转盘，让它替你决定 👆</div>
+  <button id="spinBtn">转一次</button>
+  <div class="note">每家概率相同；可以一直转。</div>
+</main>
+<script>
+const items = [
+  'Uniko（上海风味）',
+  '川魂串串香',
+  'CHILA',
+  '蜀大侠自助火锅',
+  '冒牌货冒菜',
+  'La Medusa 73',
+  '满锅锅湖南菜'
+];
+const colors=['#ff9f1c','#f4512d','#9c55c8','#2f78cf','#21a9a7','#65b632','#f2bd27'];
+const canvas=document.getElementById('wheel');
+const ctx=canvas.getContext('2d');
+const result=document.getElementById('result');
+const spinBtn=document.getElementById('spinBtn');
+const hub=document.getElementById('hub');
+let rotation=0, spinning=false;
+const TAU=Math.PI*2, seg=TAU/items.length;
+
+function fit(){
+  const rect=canvas.getBoundingClientRect();
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=Math.round(rect.width*dpr); canvas.height=Math.round(rect.height*dpr);
+  draw();
+}
+function wrapText(text,max=9){
+  if(text.length<=max) return [text];
+  const mid=Math.ceil(text.length/2);
+  return [text.slice(0,mid),text.slice(mid)];
+}
+function draw(){
+  const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=Math.min(w,h)*.47;
+  ctx.clearRect(0,0,w,h);
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rotation);
+  for(let i=0;i<items.length;i++){
+    const center=-Math.PI/2+i*seg;
+    const a0=center-seg/2, a1=center+seg/2;
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,r,a0,a1);ctx.closePath();
+    ctx.fillStyle=colors[i];ctx.fill();
+    ctx.lineWidth=Math.max(3,w*.004);ctx.strokeStyle='#fff4d8';ctx.stroke();
+
+    ctx.save();ctx.rotate(center);ctx.translate(r*.66,0);ctx.rotate(Math.PI/2);
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(45,26,9,.38)';ctx.shadowBlur=w*.006;ctx.shadowOffsetY=w*.004;
+    const lines=wrapText(items[i],8);
+    let fs=w*(lines.length>1?.035:.043);
+    if(items[i].includes('La Medusa')) fs=w*.032;
+    if(items[i].includes('Uniko')) fs=w*.033;
+    ctx.font=`900 ${fs}px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif`;
+    const lh=fs*1.18;
+    lines.forEach((line,j)=>ctx.fillText(line,0,(j-(lines.length-1)/2)*lh));
+    ctx.restore();
+  }
+  ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.lineWidth=Math.max(14,w*.022);ctx.strokeStyle='#70401f';ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,r*1.035,0,TAU);ctx.lineWidth=Math.max(8,w*.012);ctx.strokeStyle='#f6b93b';ctx.stroke();
+  ctx.restore();
+}
+function randomIndex(){
+  if(window.crypto?.getRandomValues){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%items.length;}
+  return Math.floor(Math.random()*items.length);
+}
+function easeOutCubic(t){return 1-Math.pow(1-t,3)}
+function spin(){
+  if(spinning)return;
+  spinning=true; spinBtn.disabled=true; hub.style.pointerEvents='none'; result.textContent='正在转……';
+  const chosen=randomIndex();
+  const start=rotation; const startMod=((start%TAU)+TAU)%TAU;
+  const desired=(( -chosen*seg % TAU)+TAU)%TAU;
+  const delta=((desired-startMod)+TAU)%TAU;
+  const turns=7+Math.floor(Math.random()*3);
+  const end=start+turns*TAU+delta;
+  const dur=4200+Math.random()*900; const t0=performance.now();
+  function frame(now){
+    const t=Math.min(1,(now-t0)/dur);
+    rotation=start+(end-start)*easeOutCubic(t); draw();
+    if(t<1)requestAnimationFrame(frame); else{
+      rotation=end%TAU; draw(); spinning=false; spinBtn.disabled=false; hub.style.pointerEvents='auto';
+      result.innerHTML=`今天吃：<strong>${items[chosen]}</strong> 🎉`;
+      if(navigator.vibrate)navigator.vibrate([60,40,100]);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+spinBtn.addEventListener('click',spin);hub.addEventListener('click',spin);hub.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();spin();}});
+window.addEventListener('resize',fit,{passive:true});
+requestAnimationFrame(fit);
+</script>
+</body>
+</html>
